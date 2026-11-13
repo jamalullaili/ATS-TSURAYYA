@@ -1424,6 +1424,8 @@ function app() {
 
     _inited: false,
     _savingWatch: false,
+    _saveQueue: Promise.resolve(),
+    _lastSnapshot: '',
     init() {
       if (this._inited) return;
       this._inited = true;
@@ -1432,9 +1434,16 @@ function app() {
       this.$watch('currentDay', () => { if (this.view === 'jual') this.bukaHariMakan(); });
       this.$watch(() => this.snapshotState(),
         v => {
-          if (!this.siapSimpan || this._savingWatch) return;
-          localStorage.setItem('ats_local_saved', String(Date.now()));
-          dbSet(KEY, v).catch(() => { try { localStorage.setItem(KEY, v); } catch (e) {} });
+          if (!this.siapSimpan || this._savingWatch || v === this._lastSnapshot) return;
+          this._lastSnapshot = v;
+          this._saveQueue = this._saveQueue.catch(() => {}).then(async () => {
+            try {
+              await dbSet(KEY, v);
+            } catch (e) {
+              try { localStorage.setItem(KEY, v); } catch (err) {}
+            }
+            localStorage.setItem('ats_local_saved', String(Date.now()));
+          });
           this.dorongCloudNanti();
         });
       this.initDB().then(() => this.initCloud());
@@ -2107,6 +2116,26 @@ function app() {
       });
     },
     normalizeTrx() {
+      // Bersihkan duplikasi teknis akibat data tersalin berulang dengan ID yang sama.
+      // Catatan berbeda dengan ID berbeda tetap dipertahankan, meskipun isinya mirip.
+      const unikDenganId = arr => {
+        if (!Array.isArray(arr)) return [];
+        const seen = new Set();
+        return arr.filter(item => {
+          if (!item || item.id === undefined || item.id === null || item.id === '') return true;
+          const key = String(item.id);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      };
+      this.trx = unikDenganId(this.trx);
+      this.pengirim = unikDenganId(this.pengirim);
+      this.barang = unikDenganId(this.barang);
+      this.diluar = unikDenganId(this.diluar);
+      this.setoran = unikDenganId(this.setoran);
+      this.pembayaran = Array.isArray(this.pembayaran) ? unikDenganId(this.pembayaran) : this.pembayaran;
+      this.riwayat = unikDenganId(this.riwayat);
       this.migrasiPembayaran();
       this.trx.forEach(t => { if (t.jenis === 'Lapak') { if (!this.hasBayar(t)) t.bayar = t.total; t.status = ''; t.tanggal = ''; } });
       const namaP = [...new Set([...this.trx.filter(t => t.jenis !== 'Lapak' && t.pengecer).map(t => t.pengecer), ...(this.pembayaran || []).filter(c => (c.kind || 'P') === 'P' && c.nama).map(c => c.nama)])];
@@ -2774,6 +2803,9 @@ function app() {
       } catch (e) {}
       if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
       this.siapSimpan = true;
+      // Tandai kondisi awal sebagai sudah dimuat agar refresh tidak memicu
+      // penyimpanan ulang tanpa ada perubahan data dari pengguna.
+      this._lastSnapshot = this.snapshotState();
       this.updateStorageInfo();
     },
     async updateStorageInfo() {
