@@ -96,7 +96,7 @@
 
       <!-- Popup Hasil Pencarian -->
       <div x-show="showSearchDrop && searchResults().length > 0" @click.away="showSearchDrop = false" x-cloak
-           class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden divide-y divide-stone-100 max-h-72 overflow-y-auto">
+           class="fixed inset-x-3 top-16 mx-auto max-w-sm md:absolute md:inset-x-auto md:top-full md:mt-1.5 md:left-0 md:right-0 md:max-w-none bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden divide-y divide-stone-100 max-h-[70vh] overflow-y-auto">
         <div class="px-3 py-1.5 bg-stone-50 text-[10px] font-bold uppercase tracking-wider text-stone-500">Hasil Pencarian</div>
         <template x-for="res in searchResults()" :key="res.type + res.nama + res.hari">
           <button @click="pilihHasilCari(res)" class="w-full px-3 py-2 text-left hover:bg-stone-50 flex items-center justify-between gap-2 text-xs transition">
@@ -640,7 +640,7 @@
             <thead><tr><th class="th w-12 text-center">No</th><th class="th">Nama & Kategori</th><th class="th text-right">Belum Bayar</th></tr></thead>
             <tbody>
               <template x-for="(x, i) in tagihanList()" :key="x.nama">
-                <tr class="hover:bg-slate-50">
+                <tr :id="idTagihan(x.nama)" class="hover:bg-slate-50">
                   <td class="td text-center text-xs text-slate-500" x-text="i + 1"></td>
                   <td class="td">
                     <div class="font-bold text-slate-900 text-sm" x-text="x.nama"></div>
@@ -986,9 +986,57 @@
           <h3 class="font-extrabold text-stone-900 text-xl" x-text="searchModal.nama"></h3>
           <span class="badge" :class="searchModal.type === 'Centengan' ? 'bg-amber-100 text-amber-800' : (searchModal.type === 'Pengecer' ? 'bg-sky-100 text-sky-800' : 'bg-stone-100 text-stone-700')" x-text="searchModal.type"></span>
         </div>
-        <p class="text-xs text-stone-500 mt-1">Daftar riwayat transaksi yang tercatat atas nama ini. Klik "Buka ➜" untuk menuju ke tanggal transaksi tersebut.</p>
+        <p class="text-xs text-stone-500 mt-1">Transaksi yang belum dibayar, dan 3 transaksi lunas terakhir. Ketuk Buka untuk langsung ke tanggalnya.</p>
       </div>
       <button @click="searchModal.open = false" class="text-stone-400 hover:text-stone-700 text-2xl leading-none">&times;</button>
+    </div>
+
+    <!-- Daftar transaksi: belum bayar semua, lunas 3 terakhir -->
+    <div class="space-y-4">
+      <div class="rounded-xl bg-rose-50 border border-rose-200 px-4 py-2.5 flex items-center justify-between">
+        <span class="text-xs font-semibold text-rose-800" x-text="'Belum dibayar · ' + transaksiPopup(searchModal.nama).belum.length + ' transaksi'"></span>
+        <span class="font-extrabold text-rose-700" x-text="rp(transaksiPopup(searchModal.nama).totalSisa)"></span>
+      </div>
+
+      <div>
+        <p class="text-xs font-semibold text-slate-600 mb-1">Belum dibayar <span class="font-normal text-stone-400">(paling lama di atas)</span></p>
+        <div class="divide-y divide-stone-100 border border-stone-100 rounded-xl">
+          <template x-for="r in transaksiPopup(searchModal.nama).belum" :key="r.tipe + r.targetId">
+            <div class="px-3 py-2 flex items-center justify-between gap-2 text-sm">
+              <div class="min-w-0">
+                <p class="font-semibold text-stone-900 truncate" x-text="r.barang"></p>
+                <p class="text-[11px] text-stone-500" x-text="dmy(r.hari) + ' · ' + r.tipe + ' · total ' + rp(r.total)"></p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="font-bold text-rose-700 text-xs" x-text="'Sisa ' + rp(r.sisa)"></span>
+                <button @click="bukaTransaksi(r)" class="btn btn-light !py-1 !px-2.5 !text-xs">Buka</button>
+              </div>
+            </div>
+          </template>
+          <p x-show="transaksiPopup(searchModal.nama).belum.length === 0" class="px-3 py-2.5 text-xs text-stone-400 italic">Tidak ada yang belum dibayar.</p>
+        </div>
+      </div>
+
+      <div x-show="transaksiPopup(searchModal.nama).lunas.length > 0">
+        <p class="text-xs font-semibold text-slate-600 mb-1">Sudah lunas <span class="font-normal text-stone-400" x-text="searchLunasSemua ? '(semua)' : '(3 terakhir)'"></span></p>
+        <div class="divide-y divide-stone-100 border border-stone-100 rounded-xl">
+          <template x-for="(r, i) in transaksiPopup(searchModal.nama).lunas" :key="r.tipe + r.targetId">
+            <div x-show="searchLunasSemua || i < 3" class="px-3 py-2 flex items-center justify-between gap-2 text-sm">
+              <div class="min-w-0">
+                <p class="font-semibold text-stone-900 truncate" x-text="r.barang"></p>
+                <p class="text-[11px] text-stone-500" x-text="dmy(r.hari) + ' · ' + r.tipe + ' · total ' + rp(r.total)"></p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="font-bold text-emerald-700 text-xs">Lunas</span>
+                <button @click="bukaTransaksi(r)" class="btn btn-light !py-1 !px-2.5 !text-xs">Buka</button>
+              </div>
+            </div>
+          </template>
+          <button x-show="transaksiPopup(searchModal.nama).lunas.length > 3" type="button" @click="searchLunasSemua = !searchLunasSemua"
+            class="w-full py-2 text-xs font-semibold text-indigo-700"
+            x-text="searchLunasSemua ? 'Tutup' : 'Lihat semua (' + transaksiPopup(searchModal.nama).lunas.length + ')'"></button>
+        </div>
+      </div>
     </div>
 
     <!-- Pilihan Navigasi / Aksi Cepat -->
@@ -996,7 +1044,7 @@
       <button @click="bukaNota(searchModal.nama); searchModal.open = false" class="btn btn-navy !py-1.5 !px-3 !text-xs inline-flex items-center gap-1.5">
         <span>✉</span> Buat Bon Cetak
       </button>
-      <button @click="searchModal.open = false; go('tagihan')" class="btn btn-light !py-1.5 !px-3 !text-xs inline-flex items-center gap-1.5">
+      <button @click="lihatTagihanCari(searchModal.nama)" class="btn btn-light !py-1.5 !px-3 !text-xs inline-flex items-center gap-1.5">
         <span>⚑</span> Lihat di Menu Belum Bayar
       </button>
     </div>
@@ -1267,6 +1315,7 @@ function app() {
     pembayaran: undefined,
     pickMonth: '',
     searchQuery: '',
+    searchLunasSemua: false,
     showSearchDrop: false,
     searchModal: { open: false, nama: '', type: '' },
     days: [],
@@ -1320,17 +1369,6 @@ function app() {
         }
       });
 
-      // Pengirim & Centengan
-      this.pengirim.forEach(p => {
-        if (p.nama && p.nama.toLowerCase().includes(q)) {
-          const k = p.nama.trim();
-          const j = p.jenis === 'Centengan' ? 'Centengan' : 'Pengirim';
-          if (!results.has(k.toLowerCase())) {
-            results.set(k.toLowerCase(), { type: j, nama: k, info: j + ' harian', hari: p.hari });
-          }
-        }
-      });
-
       // Pihak Diluar
       this.diluar.forEach(x => {
         if (x.nama && x.nama.toLowerCase().includes(q)) {
@@ -1346,9 +1384,47 @@ function app() {
 
     pilihHasilCari(res) {
       this.showSearchDrop = false;
+      this.searchLunasSemua = false;
       this.searchModal = { open: true, nama: res.nama, type: res.type };
     },
 
+    transaksiPopup(nama) {
+      const k = (nama || '').trim().toLowerCase();
+      const rows = [];
+      this.trx.forEach(t => {
+        if (t.jenis !== 'Lapak' && (t.pengecer || '').trim().toLowerCase() === k) {
+          rows.push({ tipe: 'Pengecer', hari: t.hari, barang: t.barang || '-', total: Number(t.total) || 0, sisa: this.sisaT(t), targetId: 'trx-row-' + t.id });
+        }
+      });
+      this.diluar.forEach(x => {
+        if ((x.nama || '').trim().toLowerCase() === k) {
+          const items = x.items || [];
+          rows.push({
+            tipe: 'Diluar', hari: x.hari,
+            barang: items.map(i => i.nama).filter(Boolean).join(', ') || '-',
+            total: items.reduce((s, i) => s + (parseFloat(i.berat) || 0) * (Number(i.harga) || 0), 0),
+            sisa: this.sisaD(x), targetId: 'diluar-row-' + x.id
+          });
+        }
+      });
+      const belum = rows.filter(r => r.sisa > 0).sort((a, b) => a.hari.localeCompare(b.hari));
+      const lunas = rows.filter(r => r.sisa <= 0).sort((a, b) => b.hari.localeCompare(a.hari));
+      return { belum, lunas, totalSisa: belum.reduce((s, r) => s + r.sisa, 0) };
+    },
+    bukaTransaksi(r) { this.bukaAndScroll(r.hari, 'jual', r.targetId); },
+    idTagihan(nama) { return 'tagihan-row-' + (nama || '').trim().toLowerCase().replace(/\s+/g, '-'); },
+    lihatTagihanCari(nama) {
+      this.searchModal.open = false;
+      this.go('tagihan');
+      const id = this.idTagihan(nama);
+      this.$nextTick(() => setTimeout(() => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-4', 'ring-amber-400', 'bg-amber-100/60', 'transition-all');
+        setTimeout(() => el.classList.remove('ring-4', 'ring-amber-400', 'bg-amber-100/60', 'transition-all'), 3000);
+      }, 150));
+    },
     detailTrxCari(nama) {
       if (!nama) return [];
       const nm = nama.trim().toLowerCase();
