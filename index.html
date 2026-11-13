@@ -164,6 +164,7 @@
           <div>
             <p class="font-bold text-slate-900">Cadangan data</p>
             <p class="text-xs" :class="backupDue ? 'text-rose-600 font-semibold' : 'text-slate-500'" x-text="backupMsg()"></p>
+            <p class="text-[11px] text-stone-400" x-show="storageInfo" x-text="storageInfo"></p>
           </div>
           <div class="flex flex-wrap gap-2">
             <button @click="exportJSON()" class="btn btn-navy">Simpan cadangan</button>
@@ -362,7 +363,7 @@
                     <span x-text="p.nama"></span>
                     <span x-show="p.jenis === 'Centengan'" class="ml-2 badge bg-amber-300 text-amber-900">CENTENGAN</span>
                   </p>
-                  <p class="text-xs text-sky-200" x-show="p.jenis !== 'Centengan'">Ongkos <span class="font-semibold text-white" x-text="rp(p.ongkos)"></span> &middot; ongkos per kg <span class="font-semibold text-white" x-text="rp(ongkosKg(p))"></span></p>
+                  <p class="text-xs text-sky-200" x-show="p.jenis !== 'Centengan'">Ongkos : <span class="font-semibold text-white" x-text="rp(p.ongkos)"></span> - <span class="font-semibold text-white" x-text="rp(ongkosKg(p))"></span> /kg</p>
                 </div>
               </div>
               <div class="flex gap-2">
@@ -380,7 +381,7 @@
                 </div>
                 <div class="overflow-x-auto rounded-xl border border-slate-200">
                   <table class="w-full">
-                    <thead><tr><th class="th w-12 text-center">No</th><th class="th">Barang</th><th class="th">Dus</th><th class="th">Qty / berat</th><th class="th">Modal / kg</th><th class="th text-right">Aksi</th></tr></thead>
+                    <thead><tr><th class="th w-12 text-center">No</th><th class="th">Barang</th><th class="th">Dus</th><th class="th">Qty</th><th class="th">Modal / kg</th><th class="th text-right">Aksi</th></tr></thead>
                     <tbody>
                       <template x-for="(b, i) in dayBarang(p)" :key="b.id">
                         <tr class="hover:bg-slate-50">
@@ -566,7 +567,7 @@
             <div class="p-6 space-y-5">
               <div class="overflow-x-auto rounded-xl border border-slate-200">
                 <table class="w-full">
-                  <thead><tr><th class="th">Barang</th><th class="th">Dus</th><th class="th">Qty masuk</th><th class="th">Modal / kg</th><th class="th">Qty terjual</th><th class="th">Modal total</th><th class="th">Hasil penjualan</th></tr></thead>
+                  <thead><tr><th class="th">Barang</th><th class="th">Dus</th><th class="th">Qty</th><th class="th">Modal / kg</th><th class="th">Modal total</th><th class="th">Hasil penjualan</th></tr></thead>
                   <tbody>
                     <template x-for="r in rekapBarang(p)" :key="r.id">
                       <tr class="hover:bg-slate-50">
@@ -576,12 +577,11 @@
                         <td class="td">
                           <input type="text" inputmode="numeric" :value="fmt(r.ref.modal)" @input="r.ref.modal = dg($event.target.value); $el.value = fmt(r.ref.modal)" class="inp w-28 !py-1">
                         </td>
-                        <td class="td" x-text="num(r.terjual)"></td>
                         <td class="td" x-text="rp(r.modalTotal)"></td>
                         <td class="td font-semibold" x-text="rp(r.jual)"></td>
                       </tr>
                     </template>
-                    <tr x-show="rekapBarang(p).length === 0"><td colspan="7" class="td text-center text-slate-400 italic text-xs">Belum ada barang masuk.</td></tr>
+                    <tr x-show="rekapBarang(p).length === 0"><td colspan="6" class="td text-center text-slate-400 italic text-xs">Belum ada barang masuk.</td></tr>
                   </tbody>
                   <tfoot class="bg-slate-50 font-bold text-sm">
                     <tr>
@@ -589,7 +589,6 @@
                       <td class="td" x-text="num(sumDus(p))"></td>
                       <td class="td" x-text="num(sumQtyBarang(p))"></td>
                       <td class="td"></td>
-                      <td class="td" x-text="num(sumQtyAll(p))"></td>
                       <td class="td" x-text="rp(modalP(p))"></td>
                       <td class="td" x-text="rp(jualP(p))"></td>
                     </tr>
@@ -1102,7 +1101,7 @@
         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nama barang</label><input type="text" x-model="modal.f.nama" placeholder="Contoh: Ori, Cmk, Pcu" class="inp"></div>
         <div class="grid grid-cols-2 gap-3">
           <div><label class="block text-xs font-semibold text-slate-600 mb-1">Dus</label><input type="text" x-model="modal.f.dus" class="inp"></div>
-          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Qty / berat</label><input type="text" x-model="modal.f.qty" placeholder="200" class="inp"></div>
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Qty</label><input type="text" x-model="modal.f.qty" placeholder="200" class="inp"></div>
         </div>
         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Modal per kg (Rp)</label><input type="text" inputmode="numeric" :value="fmt(modal.f.modal)" @input="modal.f.modal = dg($event.target.value); $el.value = fmt(modal.f.modal)" class="inp"></div>
       </div>
@@ -1270,7 +1269,21 @@
     <template x-if="modal.type === 'diluar'">
       <div class="space-y-4">
         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nama</label><input type="text" x-model="modal.f.nama" placeholder="Contoh: Bu Sri" class="inp"></div>
-        <div>
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold text-slate-600">Cara isi</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" @click="modal.f.mode = 'rincian'" class="rounded-lg border py-2 text-xs font-bold"
+              :class="modal.f.mode !== 'nominal' ? 'border-amber-400 bg-amber-50 text-amber-800' : 'border-stone-200 text-stone-500'">Kg × harga</button>
+            <button type="button" @click="modal.f.mode = 'nominal'" class="rounded-lg border py-2 text-xs font-bold"
+              :class="modal.f.mode === 'nominal' ? 'border-amber-400 bg-amber-50 text-amber-800' : 'border-stone-200 text-stone-500'">Nominal langsung</button>
+          </div>
+        </div>
+        <div x-show="modal.f.mode === 'nominal'">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nominal (Rp)</label>
+          <input type="text" inputmode="numeric" :value="fmt(modal.f.nominal)" @input="modal.f.nominal = dg($event.target.value); $el.value = fmt(modal.f.nominal)" placeholder="Rp 0" class="inp">
+          <p class="text-sm font-bold text-slate-800 mt-2">Total: <span x-text="rp(formTotalD())"></span></p>
+        </div>
+        <div x-show="modal.f.mode !== 'nominal'">
           <label class="block text-xs font-semibold text-slate-600 mb-1">Rincian (nama barang, kg, harga per kg)</label>
           <div class="space-y-2">
             <template x-for="(it, i) in modal.f.items" :key="i">
@@ -1297,6 +1310,32 @@
 
 <script>
 const KEY = 'ats_tsurayya_v1';
+const DB_NAME = 'ats_tsurayya_db', DB_STORE = 'kv';
+function dbOpen() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains(DB_STORE)) r.result.createObjectStore(DB_STORE); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function dbGet(k) {
+  const db = await dbOpen();
+  return new Promise((res, rej) => {
+    const q = db.transaction(DB_STORE).objectStore(DB_STORE).get(k);
+    q.onsuccess = () => res(q.result);
+    q.onerror = () => rej(q.error);
+  });
+}
+async function dbSet(k, v) {
+  const db = await dbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).put(v, k);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
 const STAT = ['Lunas Cash', 'Lunas Tf', 'TU Cash', 'TU Tf', 'Belum'];
 
 function app() {
@@ -1311,6 +1350,8 @@ function app() {
     backupDue: false,
     anakBuah: [], makanDays: [], absenMakan: [], bayarMakan: [],
     makanMulai: '',
+    siapSimpan: false,
+    storageInfo: '',
     bayarMakanForm: { anakId: '', tanggal: today(), jumlah: '', editId: null },
     pembayaran: undefined,
     pickMonth: '',
@@ -1331,7 +1372,7 @@ function app() {
       { id: 'pengirim', icon: '📒', label: 'Nota', desc: 'Rekap & setoran pengirim' },
       { id: 'tagihan', icon: '📄', label: 'Bon', desc: 'Yang belum dibayar (Pengecer & Diluar)' },
       { id: 'untung', icon: '📊', label: 'Laba', desc: 'Per bulan & per hari' },
-      { id: 'makan', icon: '🍚', label: 'Uang Makan', desc: 'Anak buah & rekap kehadiran' },
+      { id: 'makan', icon: '💵', label: 'Uang Makan', desc: 'Anak buah & rekap kehadiran' },
       { id: 'nota', icon: '📝', label: 'Cetak Bon', desc: 'Cetak bon untuk tagihan' },
     ],
 
@@ -1349,7 +1390,8 @@ function app() {
       this.isiHariMakan();
       this.$watch('currentDay', () => { if (this.view === 'jual') this.bukaHariMakan(); });
       this.$watch(() => JSON.stringify({ days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, makanMulai: this.makanMulai }),
-        v => { try { localStorage.setItem(KEY, v); } catch (e) {} });
+        v => { if (!this.siapSimpan) return; dbSet(KEY, v).catch(() => { try { localStorage.setItem(KEY, v); } catch (e) {} }); });
+      this.initDB();
       if (location.hash) { const h = location.hash.slice(1); if (this.menu.some(m => m.id === h)) this.view = h; }
     },
 
@@ -1682,6 +1724,10 @@ function app() {
           });
         } else {
           const x = it.ref;
+          if (x.mode === 'nominal') {
+            rows.push({ tgl: x.hari, desk: '', qty: '', harga: '', nominal: Number(x.nominal) || 0, bayar: this.hasBayar(x) ? Number(x.bayar) : 0, status: x.status || '', bayarTgl: x.tanggal || x.hari, potongan: Number(x.potongan) || 0, lunas: !!x.lunas });
+            return;
+          }
           (x.items || []).forEach((sub, idx) => {
             rows.push({
               tgl: x.hari,
@@ -2046,16 +2092,22 @@ function app() {
     },
 
     // ===== diluar =====
-    openDiluar() { this.modal = { open: true, type: 'diluar', title: 'Tambah Diluar', f: { nama: '', items: [{ nama: '', berat: '', harga: 0 }] }, id: null, parent: null }; },
-    editDiluar(x) { this.modal = { open: true, type: 'diluar', title: 'Edit Diluar', f: { nama: x.nama, items: (x.items || []).map(i => ({ ...i })) }, id: x.id, parent: x }; },
+    openDiluar() { this.modal = { open: true, type: 'diluar', title: 'Tambah Diluar', f: { nama: '', mode: 'rincian', nominal: '', items: [{ nama: '', berat: '', harga: 0 }] }, id: null, parent: null }; },
+    editDiluar(x) { this.modal = { open: true, type: 'diluar', title: 'Edit Diluar', f: { nama: x.nama, mode: x.mode === 'nominal' ? 'nominal' : 'rincian', nominal: x.nominal != null ? String(x.nominal) : '', items: (x.items || []).map(i => ({ ...i })) }, id: x.id, parent: x }; },
     delDiluar(x) {
       const nama = x.nama;
       this.diluar = this.diluar.filter(d => d.id !== x.id);
       if (nama) this.alokasiNamaD(nama);
     },
-    totalD(x) { return (x.items || []).reduce((s, i) => s + (parseFloat(i.berat) || 0) * (Number(i.harga) || 0), 0); },
-    formTotalD() { return (this.modal.f.items || []).reduce((s, i) => s + (parseFloat(i.berat) || 0) * (Number(i.harga) || 0), 0); },
-    rincian(x) { if (!x.items || !x.items.length) return '-'; return x.items.map(i => (i.nama ? i.nama + ' ' : '') + this.num(i.berat) + ' kg × ' + this.rp(i.harga)).join(' + '); },
+    totalD(x) {
+      if (x.mode === 'nominal') return Number(x.nominal) || 0;
+      return (x.items || []).reduce((s, i) => s + (parseFloat(i.berat) || 0) * (Number(i.harga) || 0), 0);
+    },
+    formTotalD() {
+      if (this.modal.f.mode === 'nominal') return this.dg(this.modal.f.nominal);
+      return (this.modal.f.items || []).reduce((s, i) => s + (parseFloat(i.berat) || 0) * (Number(i.harga) || 0), 0);
+    },
+    rincian(x) { if (x.mode === 'nominal') return 'Nominal langsung'; if (!x.items || !x.items.length) return '-'; return x.items.map(i => (i.nama ? i.nama + ' ' : '') + this.num(i.berat) + ' kg × ' + this.rp(i.harga)).join(' + '); },
     setBayarD(x, raw) { const wasEmpty = !this.hasBayar(x); const d = String(raw).replace(/[^0-9]/g, ''); x.bayar = d === '' ? '' : parseInt(d, 10); if (x.bayar !== '' && wasEmpty) x.status = x.bayar >= this.totalD(x) ? 'Lunas Cash' : 'Belum'; if (x.bayar !== '' && !x.tanggal) x.tanggal = today(); },
     sisaD(x) { if (x.lunas) return 0; return Math.max(0, this.totalD(x) - (this.hasBayar(x) ? Number(x.bayar) : 0) - (Number(x.potongan) || 0)); },
     sumDiluar(f) { return this.dayDiluar().reduce((s, x) => s + (f === 'total' ? this.totalD(x) : (this.hasBayar(x) ? Number(x.bayar) : 0)), 0); },
@@ -2370,7 +2422,7 @@ function app() {
 
     // ===== nota =====
     notaBlanks() { return Array.from({ length: Math.max(0, 12 - this.nota.rows.length) }, (_, i) => i); },
-    notaBaris(r) { return (parseFloat(r.qty) || 0) * (Number(r.harga) || 0); },
+    notaBaris(r) { if (r.nominal) return Number(r.nominal) || 0; return (parseFloat(r.qty) || 0) * (Number(r.harga) || 0); },
     notaTotal() { return this.nota.rows.reduce((s, r) => s + this.notaBaris(r), 0); },
     notaBayar() {
       if ((this.nota.kepada || '').trim()) {
@@ -2453,11 +2505,13 @@ function app() {
         if (!f.nama) return;
         const namaBaru = f.nama.trim();
         const items = (f.items || []).map(i => ({ nama: i.nama || '', berat: parseFloat(i.berat) || 0, harga: Number(i.harga) || 0 })).filter(i => i.berat > 0 || i.harga > 0);
+        const mode = f.mode === 'nominal' ? 'nominal' : 'rincian';
+        const nominal = mode === 'nominal' ? (this.dg(f.nominal) || 0) : 0;
         if (m.id) {
           const x = this.diluar.find(d => d.id === m.id);
           if (x) {
             const namaLama = (x.nama || '').trim();
-            Object.assign(x, { nama: namaBaru, items });
+            Object.assign(x, { nama: namaBaru, items, mode, nominal });
             if (namaLama && this.kunciNama(namaLama) !== this.kunciNama(namaBaru)) {
               if (this.trxNamaD(namaLama).length === 0) {
                 (this.pembayaran || []).forEach(c => { if (c.kind === 'D' && this.kunciNama(c.nama) === this.kunciNama(namaLama)) c.nama = namaBaru; });
@@ -2468,7 +2522,7 @@ function app() {
             this.alokasiNamaD(namaBaru);
           }
         } else {
-          this.diluar.push({ id: uid(), hari: this.currentDay, nama: namaBaru, items, bayar: '', status: '', tanggal: '' });
+          this.diluar.push({ id: uid(), hari: this.currentDay, nama: namaBaru, items, mode, nominal, bayar: '', status: '', tanggal: '' });
           this.alokasiNamaD(namaBaru);
         }
       }
@@ -2565,6 +2619,30 @@ function app() {
     cadanganPerlu() {
       const t = Number(localStorage.getItem('ats_last_backup') || 0);
       return !t || (Date.now() - t) >= 3 * 24 * 60 * 60 * 1000;
+    },
+    terapkanState(s) {
+      if (s) Object.assign(this, { makanMulai: s.makanMulai || '', anakBuah: s.anakBuah || [], makanDays: s.makanDays || [], absenMakan: s.absenMakan || [], bayarMakan: s.bayarMakan || [], days: s.days || [], pengirim: s.pengirim || [], barang: s.barang || [], trx: s.trx || [], diluar: s.diluar || [], setoran: s.setoran || [], pembayaran: Array.isArray(s.pembayaran) ? s.pembayaran : undefined, riwayat: s.riwayat || [], currentDay: s.currentDay || this.currentDay });
+      this.days = [...new Set(this.days)];
+      this.normalizeTrx();
+      this.isiHariMakan();
+    },
+    snapshotState() { return JSON.stringify({ days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, makanMulai: this.makanMulai }); },
+    async initDB() {
+      try {
+        const raw = await dbGet(KEY);
+        if (raw) this.terapkanState(JSON.parse(raw));
+        else await dbSet(KEY, this.snapshotState());
+      } catch (e) {}
+      this.siapSimpan = true;
+      this.updateStorageInfo();
+    },
+    async updateStorageInfo() {
+      try {
+        if (navigator.storage && navigator.storage.persist) await navigator.storage.persist();
+        const e = await navigator.storage.estimate();
+        const mb = n => (n / 1048576).toFixed(1).replace('.', ',') + ' MB';
+        this.storageInfo = 'Data tersimpan: ' + mb(e.usage || 0) + ' dari ' + mb(e.quota || 0);
+      } catch (err) { this.storageInfo = ''; }
     },
     backupMsg() {
       const t = Number(localStorage.getItem('ats_last_backup') || 0);
