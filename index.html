@@ -121,7 +121,7 @@
         </div>
         <div class="flex items-center gap-2" x-show="view !== 'dash' && view !== 'nota' && view !== 'tagihan'">
           <span class="text-xs text-slate-500">Tanggal</span>
-          <input type="date" x-model="currentDay" @change="setDay(currentDay)" class="inp w-44">
+          <input type="date" x-model="currentDay" :max="today()" @change="setDay(currentDay)" class="inp w-44">
         </div>
       </div>
 
@@ -150,15 +150,15 @@
             </div>
             <div class="grid grid-cols-7 gap-1">
               <template x-for="(c, i) in calHari()" :key="i">
-                <button @click="c && (setDay(c.iso), go('jual'))" :disabled="!c"
+                <button @click="c && !c.future && (setDay(c.iso), go('jual'))" :disabled="!c || c.future"
                         class="aspect-square rounded-lg text-xs font-semibold flex flex-col items-center justify-center transition"
-                        :class="!c ? 'invisible' : (c.iso === currentDay ? 'bg-stone-900 text-white' : (c.ada ? 'bg-stone-100 text-stone-900 hover:bg-stone-200' : 'text-stone-500 hover:bg-stone-50'))">
+                        :class="!c ? 'invisible' : (c.future ? 'text-slate-300 cursor-not-allowed' : (c.iso === currentDay ? 'bg-stone-900 text-white' : (c.ada ? 'bg-stone-100 text-stone-900 hover:bg-stone-200' : 'text-stone-500 hover:bg-stone-50')))">
                   <span x-text="c ? c.n : ''"></span>
                   <span x-show="c && c.ada && c.iso !== currentDay" class="mt-0.5 h-1 w-1 rounded-full bg-emerald-500"></span>
                 </button>
               </template>
             </div>
-            <p class="text-[11px] text-slate-400">Klik tanggal untuk membuka catatan. Titik hijau = ada transaksi.</p>
+            <p class="text-[11px] text-slate-400">Klik tanggal untuk membuka catatan. Tanggal setelah hari ini tidak dapat dipilih. Titik hijau = ada transaksi.</p>
           </div>
             <div class="card p-5 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -252,7 +252,7 @@
                       <tbody class="divide-y divide-slate-100">
                         <template x-for="r in card.rows" :key="r.hari + '-' + r.pId">
                           <tr class="hover:bg-amber-50/60 cursor-pointer transition" @click="bukaAndScroll(r.hari, 'pengirim', 'setoran-card-' + r.pId)">
-                            <td class="td !py-2 font-medium text-slate-700 whitespace-nowrap" x-text="tgl(r.hari)"></td>
+                            <td class="td !py-2 font-medium text-slate-700 whitespace-nowrap" x-text="dmy(r.hari)"></td>
                             
                             <td class="td !py-2 text-right font-semibold text-slate-900 whitespace-nowrap"><span x-text="rp(r.tagihan)"></span><span x-show="setorHariTxt(r.nama, r.hari)" class="block text-[10px] font-medium text-rose-700 leading-tight mt-0.5" x-text="setorHariTxt(r.nama, r.hari)"></span></td>
                           </tr>
@@ -306,7 +306,7 @@
                       <tbody class="divide-y divide-slate-100">
                         <template x-for="r in setorBelumGrouped().centenganCard.rows" :key="r.nama + '-' + r.hari + '-' + r.pId">
                           <tr class="hover:bg-amber-50/60 cursor-pointer transition" @click="bukaAndScroll(r.hari, 'pengirim', 'setoran-card-' + r.pId)">
-                            <td class="td !py-2 font-medium text-slate-700 whitespace-nowrap" x-text="tgl(r.hari)"></td>
+                            <td class="td !py-2 font-medium text-slate-700 whitespace-nowrap" x-text="dmy(r.hari)"></td>
                             <td class="td !py-2 font-semibold text-slate-800">
                               <span x-text="r.nama"></span>
                               <span x-show="r.ket" class="block text-[10px] font-normal text-slate-500" x-text="r.ket"></span>
@@ -355,7 +355,7 @@
           </div>
           <div class="flex items-center gap-2">
             <label class="text-xs font-semibold text-stone-700">Ubah Tanggal:</label>
-            <input type="date" x-model="currentDay" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-sm font-bold bg-white">
+            <input type="date" x-model="currentDay" :max="today()" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-sm font-bold bg-white">
           </div>
         </div>
 
@@ -554,7 +554,7 @@
           </div>
           <div class="flex items-center gap-2">
             <label class="text-xs font-semibold text-stone-700">Ubah Tanggal:</label>
-            <input type="date" x-model="currentDay" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-sm font-bold bg-white">
+            <input type="date" x-model="currentDay" :max="today()" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-sm font-bold bg-white">
           </div>
         </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -851,7 +851,7 @@
                   <option :value="x.nama"></option>
                 </template>
               </datalist>
-              <button x-show="nota.kepada" @click="nota.kepada = ''; nota.rows = []" class="absolute right-2.5 text-slate-400 hover:text-slate-700 text-lg leading-none font-bold" title="Hapus nama">&times;</button>
+              <button x-show="nota.kepada" @click="ask('Hapus nama pembeli dan kosongkan seluruh rincian bon?', () => { nota.kepada = ''; nota.rows = []; })" class="absolute right-2.5 text-slate-400 hover:text-slate-700 text-lg leading-none font-bold" title="Hapus nama">&times;</button>
             </div>
             <p class="text-[11px] text-slate-400 mt-1">Transaksi yang belum lunas atas nama ini otomatis masuk ke bon.</p>
             <div x-show="nota.kepada && notaStatusLunas()" class="mt-2.5 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-800 font-semibold">
@@ -871,9 +871,9 @@
                   <div class="flex items-center gap-1.5 flex-1">
                     <span class="text-[10px] font-bold text-slate-400">#<span x-text="i + 1"></span></span>
                     <label class="text-[10px] font-semibold text-slate-500">Tgl:</label>
-                    <input type="date" x-model="r.tgl" class="inp !py-0.5 !px-1.5 !text-xs !w-auto font-medium bg-white">
+                    <input type="date" x-model="r.tgl" :max="today()" class="inp !py-0.5 !px-1.5 !text-xs !w-auto font-medium bg-white">
                   </div>
-                  <button @click="nota.rows.splice(i, 1)" class="text-slate-400 hover:text-rose-600 text-base font-bold px-1 transition" title="Hapus baris">&times;</button>
+                  <button @click="ask('Hapus baris rincian bon ini?', () => nota.rows.splice(i, 1))" class="text-slate-400 hover:text-rose-600 text-base font-bold px-1 transition" title="Hapus baris">&times;</button>
                 </div>
                 <div class="grid grid-cols-12 gap-2 items-center">
                   <div class="col-span-6">
@@ -896,7 +896,7 @@
                   </div>
                   <div class="col-span-6">
                     <label class="block text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Tgl Titip</label>
-                    <input type="date" x-model="r.bayarTgl" class="inp !py-0.5 !px-1.5 !text-xs font-medium bg-white">
+                    <input type="date" x-model="r.bayarTgl" :max="today()" class="inp !py-0.5 !px-1.5 !text-xs font-medium bg-white">
                   </div>
                 </div>
               </div>
@@ -1071,7 +1071,7 @@
     <p class="text-sm text-slate-600" x-text="confirmBox.msg"></p>
     <div class="flex justify-end gap-2">
       <button @click="confirmBox.open = false" class="btn btn-light">Batal</button>
-      <button @click="confirmBox.open = false; confirmBox.fn && confirmBox.fn()" class="btn bg-rose-600 hover:bg-rose-500 text-white" x-text="confirmBox.label || 'Hapus'"></button>
+      <button @click="jalankanKonfirmasi()" class="btn bg-rose-600 hover:bg-rose-500 text-white" x-text="confirmBox.label || 'Hapus'"></button>
     </div>
   </div>
 </div>
@@ -1197,7 +1197,7 @@
                 <div class="flex items-center gap-2.5 shrink-0">
                   <span class="font-bold text-stone-900" x-text="rp(c.jumlah)"></span>
                   <button type="button" @click="editPembayaran(c)" class="text-indigo-700 text-xs font-semibold hover:underline">Edit</button>
-                  <button type="button" @click="hapusPembayaran(c.id)" class="text-rose-600 text-xs font-semibold hover:underline">Hapus</button>
+                  <button type="button" @click="ask('Hapus pembayaran ' + rp(c.jumlah) + ' pada ' + tgl(c.tgl) + '?', () => hapusPembayaran(c.id))" class="text-rose-600 text-xs font-semibold hover:underline">Hapus</button>
                 </div>
               </div>
               <p x-show="c.alokasiDetail && c.alokasiDetail.length > 0" class="text-[11px] text-stone-400 mt-1" x-text="'Alokasi: ' + (c.alokasiDetail || []).join(', ')"></p>
@@ -1313,7 +1313,7 @@
                 <input type="text" x-model="it.nama" placeholder="Barang" class="inp col-span-4 !py-1.5">
                 <input type="text" inputmode="decimal" x-model="it.berat" placeholder="Kg" class="inp col-span-3 !py-1.5">
                 <input type="text" inputmode="numeric" :value="fmt(it.harga)" @input="it.harga = dg($event.target.value); $el.value = fmt(it.harga)" placeholder="Harga/kg" class="inp col-span-4 !py-1.5">
-                <button @click="modal.f.items.splice(i, 1)" class="col-span-1 text-rose-600 text-lg">&times;</button>
+                <button @click="ask('Hapus baris rincian barang ini?', () => modal.f.items.splice(i, 1))" class="col-span-1 text-rose-600 text-lg">&times;</button>
               </div>
             </template>
             <button type="button" @click="modal.f.items.push({nama: '', berat: '', harga: 0})" class="text-xs font-semibold text-amber-700">+ Tambah baris</button>
@@ -1656,7 +1656,10 @@ function app() {
       const base = this.calBulan || this.currentDay.slice(0, 7);
       const d = new Date(base + '-01T00:00:00');
       d.setMonth(d.getMonth() + n);
-      this.calBulan = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      const bulanTujuan = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      // Kalender tidak dapat digeser ke bulan setelah bulan berjalan.
+      if (bulanTujuan > this.today().slice(0, 7)) return;
+      this.calBulan = bulanTujuan;
     },
     calLabel() {
       const base = this.calBulan || this.currentDay.slice(0, 7);
@@ -1672,13 +1675,27 @@ function app() {
       for (let i = 0; i < offset; i++) hasil.push(null);
       for (let d = 1; d <= jumlah; d++) {
         const iso = y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-        hasil.push({ n: d, iso, ada: this.trx.some(t => t.hari === iso) || this.pengirim.some(p => p.hari === iso) });
+        hasil.push({ n: d, iso, future: iso > this.today(), ada: this.trx.some(t => t.hari === iso) || this.pengirim.some(p => p.hari === iso) });
       }
       while (hasil.length % 7) hasil.push(null);
       return hasil;
     },
-    setDay(d) { if (!d) return; if (!this.days.includes(d)) this.days.push(d); this.currentDay = d; },
+    setDay(d) {
+      if (!d) return;
+      // Tolak tanggal masa depan agar catatan tidak salah masuk ke hari esok.
+      if (d > this.today()) { this.currentDay = this.today(); return; }
+      if (!this.days.includes(d)) this.days.push(d);
+      this.currentDay = d;
+    },
     ask(msg, fn, label) { this.confirmBox = { open: true, msg, fn, label: label || 'Hapus' }; },
+    jalankanKonfirmasi() {
+      const popupSebelumnyaTerbuka = !!this.modal.open;
+      const aksi = this.confirmBox.fn;
+      this.confirmBox.open = false;
+      if (typeof aksi === 'function') aksi();
+      // Popup/form asal (misalnya + Bayar) tetap terbuka setelah penghapusan.
+      if (popupSebelumnyaTerbuka) this.modal.open = true;
+    },
     pageKicker() { return { dash: 'Beranda', jual: 'Penjualan', pengirim: 'Pengirim', tagihan: 'Keuangan', untung: 'Laporan', nota: 'Dokumen' }[this.view] || ''; },
     pageTitle() { return { dash: 'Dashboard', jual: 'Penjualan', pengirim: 'Nota', tagihan: 'Bon', untung: 'Laba', nota: 'Cetak Bon', makan: 'Uang Makan' }[this.view] || ''; },
 
@@ -2390,7 +2407,7 @@ function app() {
       return jual - modal - ongkos;
     },
     hariDetail(m) {
-      return this.days.filter(d => d.startsWith(m)).sort().map(d => {
+      return this.days.filter(d => d <= this.today() && d.startsWith(m)).sort().map(d => {
         const t = this.trx.filter(x => x.hari === d);
         const jual = t.reduce((s, x) => s + (Number(x.total) || 0), 0);
         const bayar = t.reduce((s, x) => s + (this.hasBayar(x) ? Number(x.bayar) : 0), 0);
@@ -2403,10 +2420,12 @@ function app() {
     },
     sumHari(f) { return this.hariDetail(this.bulanAktif()).reduce((s, h) => s + (h[f] || 0), 0); },
     bulanList() {
-      const ms = [...new Set([...this.days, ...this.bayarMakan.map(b => b.tanggal)].map(d => d.slice(0, 7)))].sort();
+      const hariSampaiHariIni = this.days.filter(d => d <= this.today());
+      const makanSampaiHariIni = this.bayarMakan.filter(b => b.tanggal && b.tanggal <= this.today());
+      const ms = [...new Set([...hariSampaiHariIni, ...makanSampaiHariIni.map(b => b.tanggal)].map(d => d.slice(0, 7)))].sort();
       return ms.map(m => {
-        const luarHari = this.bayarMakan.filter(b => b.tanggal.startsWith(m) && !this.days.includes(b.tanggal)).reduce((s, b) => s + (Number(b.jumlah) || 0), 0);
-        return { bulan: m, hari: this.days.filter(d => d.startsWith(m)).length, untung: this.hariDetail(m).reduce((s, h) => s + h.untung, 0) - luarHari };
+        const luarHari = makanSampaiHariIni.filter(b => b.tanggal.startsWith(m) && !hariSampaiHariIni.includes(b.tanggal)).reduce((s, b) => s + (Number(b.jumlah) || 0), 0);
+        return { bulan: m, hari: hariSampaiHariIni.filter(d => d.startsWith(m)).length, untung: this.hariDetail(m).reduce((s, h) => s + h.untung, 0) - luarHari };
       });
     },
     bulanAktif() { const l = this.bulanList(); if (this.pickMonth && l.some(b => b.bulan === this.pickMonth)) return this.pickMonth; return l.length ? l[l.length - 1].bulan : ''; },
@@ -2816,12 +2835,29 @@ function app() {
     },
     cloudDocId(value) { return encodeURIComponent(String(value)).slice(0, 1400) || 'kosong'; },
     cloudStableJson(value) {
-      // Urutan hasil query Firestore tidak dijamin sama dengan urutan IndexedDB.
-      // Untuk perbandingan sinkronisasi, urutkan elemen array secara kanonis.
-      const rapikan = v => Array.isArray(v)
-        ? v.map(rapikan).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+      // Urutkan hanya properti objek. Urutan array adalah data bermakna dan wajib dipertahankan.
+      const rapikan = v => Array.isArray(v) ? v.map(rapikan)
         : (v && typeof v === 'object' ? Object.keys(v).sort().reduce((o, k) => { o[k] = rapikan(v[k]); return o; }, {}) : v);
       return JSON.stringify(rapikan(value));
+    },
+    validasiStateCloud(state) {
+      if (!state || typeof state !== 'object' || Array.isArray(state)) throw new Error('Struktur data tidak valid.');
+      const arrays = [...this.cloudRecordCollections(), 'trx'];
+      for (const k of arrays) if (state[k] !== undefined && !Array.isArray(state[k])) throw new Error('Bagian data "' + k + '" harus berupa daftar.');
+      for (const k of ['days', 'makanDays']) for (const v of (state[k] || [])) if (typeof v !== 'string') throw new Error('Isi "' + k + '" tidak valid.');
+      for (const k of arrays.filter(x => x !== 'days' && x !== 'makanDays')) {
+        const seen = new Set();
+        for (const item of (state[k] || [])) {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('Ada catatan tidak valid pada "' + k + '".');
+          if (item.id !== undefined && item.id !== null && item.id !== '') {
+            const id = String(item.id);
+            if (seen.has(id)) throw new Error('ID ganda ditemukan pada "' + k + '": ' + id);
+            seen.add(id);
+          }
+        }
+      }
+      if (state.currentDay !== undefined && typeof state.currentDay !== 'string') throw new Error('Tanggal aktif pada data tidak valid.');
+      return true;
     },
     cloudRecordCollections() {
       return ['days', 'makanDays', 'pengirim', 'barang', 'diluar', 'setoran', 'pembayaran', 'riwayat', 'anakBuah', 'absenMakan', 'bayarMakan'];
@@ -2842,15 +2878,25 @@ function app() {
       const names = this.cloudRecordCollections();
       const jobs = names.map(async name => {
         const q = await ref.collection(name).get();
-        state[name] = q.docs.map(d => {
+        const docs = [...q.docs].sort((a, b) => {
+          const ao = a.data()?._atsOrder, bo = b.data()?._atsOrder;
+          return Number.isFinite(ao) && Number.isFinite(bo) ? ao - bo : a.id.localeCompare(b.id);
+        });
+        state[name] = docs.map(d => {
           const x = d.data() || {};
-          return (name === 'days' || name === 'makanDays') ? x.value : x;
+          if (name === 'days' || name === 'makanDays') return x.value;
+          const { _atsOrder, ...clean } = x;
+          return clean;
         }).filter(x => x !== undefined);
       });
       const buckets = Array.isArray(meta.trxBuckets) ? meta.trxBuckets : [];
       buckets.forEach(bucket => jobs.push((async () => {
         const q = await ref.collection(bucket).get();
-        state.trx.push(...q.docs.map(d => d.data()));
+        const docs = [...q.docs].sort((a, b) => {
+          const ao = a.data()?._atsOrder, bo = b.data()?._atsOrder;
+          return Number.isFinite(ao) && Number.isFinite(bo) ? ao - bo : a.id.localeCompare(b.id);
+        });
+        state.trx.push(...docs.map(d => { const { _atsOrder, ...clean } = d.data() || {}; return clean; }));
       })()));
       await Promise.all(jobs);
       state.currentDay = meta.currentDay || '';
@@ -2860,59 +2906,109 @@ function app() {
     async tulisStateCloudTerpisah(state, expectedVersion) {
       const ref = fbDb.collection('ats').doc('data');
       this.siapkanIdCloud(state);
-      const metaSnap = await ref.get();
-      const meta = metaSnap.exists ? (metaSnap.data() || {}) : {};
-      const liveVersion = Number(meta.updatedAt || meta.splitUpdatedAt) || 0;
-      if (liveVersion !== Number(expectedVersion || 0)) throw new Error('Versi cloud berubah di perangkat lain. Sinkronisasi dihentikan agar data tidak tertimpa.');
-
-      const oldBuckets = Array.isArray(meta.trxBuckets) ? meta.trxBuckets : [];
-      const desired = new Map();
-      const buckets = new Set();
-      const add = (collection, id, value) => desired.set(collection + '/' + id, { collection, id, value });
-      this.cloudRecordCollections().forEach(name => {
-        (state[name] || []).forEach((item, i) => {
-          if (name === 'days' || name === 'makanDays') add(name, this.cloudDocId(item), { value: item });
-          else if (item && typeof item === 'object') add(name, this.cloudDocId(item.id ?? ('legacy_' + i)), item);
+      this.validasiStateCloud(state);
+      const owner = 'sync_' + uid() + '_' + Math.random().toString(36).slice(2);
+      const lockMs = 10 * 60 * 1000;
+      // Kunci berbasis transaksi mencegah dua versi aplikasi baru menulis bersamaan.
+      await fbDb.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        const meta = snap.exists ? (snap.data() || {}) : {};
+        const liveVersion = Number(meta.updatedAt || meta.splitUpdatedAt) || 0;
+        const lock = meta.syncLock || {};
+        if (liveVersion !== Number(expectedVersion || 0)) throw new Error('Versi cloud berubah di perangkat lain. Sinkronisasi dihentikan agar data tidak tertimpa.');
+        if (lock.owner && Number(lock.expiresAt || 0) > Date.now()) throw new Error('Perangkat lain sedang menyimpan data. Tunggu sebentar lalu sinkronkan kembali.');
+        tx.set(ref, { syncLock: { owner, expiresAt: Date.now() + lockMs } }, { merge: true });
+      });
+      const lepaskanKunci = async () => {
+        try {
+          await fbDb.runTransaction(async tx => {
+            const snap = await tx.get(ref);
+            if (!snap.exists) return;
+            const meta = snap.data() || {};
+            if (meta.syncLock && meta.syncLock.owner === owner) tx.set(ref, { syncLock: firebase.firestore.FieldValue.delete() }, { merge: true });
+          });
+        } catch (_) { /* Kunci memiliki masa kedaluwarsa sebagai pengaman terakhir. */ }
+      };
+      try {
+        const metaSnap = await ref.get();
+        const meta = metaSnap.exists ? (metaSnap.data() || {}) : {};
+        const oldBuckets = Array.isArray(meta.trxBuckets) ? meta.trxBuckets : [];
+        const desired = new Map();
+        const buckets = new Set();
+        const add = (collection, id, value) => desired.set(collection + '/' + id, { collection, id, value });
+        this.cloudRecordCollections().forEach(name => {
+          (state[name] || []).forEach((item, i) => {
+            if (name === 'days' || name === 'makanDays') add(name, this.cloudDocId(item), { value: item, _atsOrder: i });
+            else if (item && typeof item === 'object') add(name, this.cloudDocId(item.id), { ...item, _atsOrder: i });
+          });
         });
-      });
-      (state.trx || []).forEach((item, i) => {
-        const bucket = this.cloudWeekKey(item && item.hari);
-        buckets.add(bucket);
-        add(bucket, this.cloudDocId(item && item.id !== undefined ? item.id : ('legacy_' + i)), item);
-      });
-
-      const allCollections = [...new Set([...this.cloudRecordCollections(), ...oldBuckets, ...buckets])];
-      const existing = new Map();
-      for (const name of allCollections) {
-        const q = await ref.collection(name).get();
-        q.docs.forEach(d => existing.set(name + '/' + d.id, { collection: name, id: d.id, ref: d.ref, value: d.data() }));
-      }
-      const writes = [];
-      desired.forEach((entry, key) => {
-        const prior = existing.get(key);
-        if (!prior || this.cloudStableJson(prior.value) !== this.cloudStableJson(entry.value)) {
-          writes.push({ type: 'set', ref: ref.collection(entry.collection).doc(entry.id), value: entry.value });
+        (state.trx || []).forEach((item, i) => {
+          const bucket = this.cloudWeekKey(item && item.hari);
+          buckets.add(bucket);
+          add(bucket, this.cloudDocId(item.id), { ...item, _atsOrder: i });
+        });
+        const allCollections = [...new Set([...this.cloudRecordCollections(), ...oldBuckets, ...buckets])];
+        // Baca koleksi secara paralel untuk mengurangi waktu tunggu jaringan.
+        const snapshots = await Promise.all(allCollections.map(name => ref.collection(name).get()));
+        const existing = new Map();
+        for (let i = 0; i < allCollections.length; i++) snapshots[i].docs.forEach(d => existing.set(allCollections[i] + '/' + d.id, { collection: allCollections[i], id: d.id, ref: d.ref, value: d.data() }));
+        const writes = [];
+        desired.forEach((entry, key) => {
+          const prior = existing.get(key);
+          if (!prior || this.cloudStableJson(prior.value) !== this.cloudStableJson(entry.value)) writes.push({ type: 'set', ref: ref.collection(entry.collection).doc(entry.id), value: entry.value });
+        });
+        const deletes = [];
+        existing.forEach((entry, key) => { if (!desired.has(key)) deletes.push({ type: 'delete', ref: entry.ref }); });
+        // Tulis/konfirmasi seluruh dokumen tujuan lebih dahulu. Penghapusan ditunda sampai verifikasi lolos.
+        for (let i = 0; i < writes.length; i += 400) {
+          await fbDb.runTransaction(async tx => {
+            const lockSnap = await tx.get(ref);
+            const lockMeta = lockSnap.exists ? (lockSnap.data() || {}) : {};
+            if (!lockMeta.syncLock || lockMeta.syncLock.owner !== owner) throw new Error('Kunci sinkronisasi hilang; proses dihentikan.');
+            tx.set(ref, { syncLock: { owner, expiresAt: Date.now() + lockMs } }, { merge: true });
+          });
+          const batch = fbDb.batch();
+          writes.slice(i, i + 400).forEach(w => batch.set(w.ref, w.value));
+          await batch.commit();
         }
-      });
-      existing.forEach((entry, key) => { if (!desired.has(key)) writes.push({ type: 'delete', ref: entry.ref }); });
-
-      // Batas batch Firestore 500 operasi; gunakan 400 agar ada ruang aman.
-      for (let i = 0; i < writes.length; i += 400) {
-        const batch = fbDb.batch();
-        writes.slice(i, i + 400).forEach(w => w.type === 'set' ? batch.set(w.ref, w.value) : batch.delete(w.ref));
-        await batch.commit();
+        const verifySnapshots = await Promise.all(allCollections.map(name => ref.collection(name).get()));
+        const verified = new Map();
+        verifySnapshots.forEach((q, i) => q.docs.forEach(d => verified.set(allCollections[i] + '/' + d.id, d.data())));
+        for (const [key, entry] of desired) {
+          const actual = verified.get(key);
+          if (!actual || this.cloudStableJson(actual) !== this.cloudStableJson(entry.value)) throw new Error('Verifikasi dokumen gagal (' + entry.collection + '/' + entry.id + '). Data lama tidak dihapus.');
+        }
+        for (let i = 0; i < deletes.length; i += 400) {
+          await fbDb.runTransaction(async tx => {
+            const lockSnap = await tx.get(ref);
+            const lockMeta = lockSnap.exists ? (lockSnap.data() || {}) : {};
+            if (!lockMeta.syncLock || lockMeta.syncLock.owner !== owner) throw new Error('Kunci sinkronisasi hilang saat pembersihan; proses dihentikan.');
+            tx.set(ref, { syncLock: { owner, expiresAt: Date.now() + lockMs } }, { merge: true });
+          });
+          const batch = fbDb.batch();
+          deletes.slice(i, i + 400).forEach(w => batch.delete(w.ref));
+          await batch.commit();
+        }
+        const now = Date.now();
+        await fbDb.runTransaction(async tx => {
+          const latest = await tx.get(ref);
+          const latestMeta = latest.exists ? (latest.data() || {}) : {};
+          const liveVersion = Number(latestMeta.updatedAt || latestMeta.splitUpdatedAt) || 0;
+          if (!latestMeta.syncLock || latestMeta.syncLock.owner !== owner || liveVersion !== Number(expectedVersion || 0)) throw new Error('Versi cloud/kunci berubah sebelum penyelesaian. Sinkronkan ulang; data tidak dinyatakan selesai.');
+          tx.set(ref, {
+            splitSchemaVersion: 1,
+            trxBuckets: [...buckets].sort(),
+            recordCollections: this.cloudRecordCollections(),
+            currentDay: state.currentDay || '', makanMulai: state.makanMulai || '',
+            updatedAt: now, splitUpdatedAt: now,
+            syncLock: firebase.firestore.FieldValue.delete()
+          }, { merge: true });
+        });
+        return now;
+      } catch (err) {
+        await lepaskanKunci();
+        throw err;
       }
-      const now = Date.now();
-      await ref.set({
-        splitSchemaVersion: 1,
-        trxBuckets: [...buckets].sort(),
-        recordCollections: this.cloudRecordCollections(),
-        currentDay: state.currentDay || '',
-        makanMulai: state.makanMulai || '',
-        updatedAt: now,
-        splitUpdatedAt: now
-      }, { merge: true });
-      return now;
     },
     async sinkronCloud() {
       if (!this._localReady) throw new Error('IndexedDB belum siap; sinkronisasi dihentikan demi keamanan data.');
@@ -3027,7 +3123,7 @@ function app() {
         await dbSet(KEY, normalized);
         await dbSet('ats_meta_local_saved', version);
         this._lastSnapshot = normalized;
-        this._cloudVersion = version; this._cloudJson = normalized; this._cloudConflict = false;
+        this._cloudVersion = version; this._cloudJson = this.cloudStableJson(state); this._cloudConflict = false;
         await this.updateStorageInfo();
         this.cloudStatus = 'Tersimpan ke cloud · ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
       } catch (err) {
@@ -3110,7 +3206,7 @@ function app() {
       return 'Cadangan terakhir: ' + new Date(t).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + '. Berikutnya dalam 3 hari.';
     },
     exportJSON() {
-      const blob = new Blob([JSON.stringify({ makanMulai: this.makanMulai, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat }, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify({ backupSchemaVersion: 2, exportedAt: new Date().toISOString(), makanMulai: this.makanMulai, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat }, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = this.namaFileCadangan();
@@ -3123,16 +3219,46 @@ function app() {
         this.cloudStatus = 'File cadangan diunduh, tetapi tanggal cadangan lokal gagal disimpan.';
       });
     },
+    siapkanCadangan(d) {
+      if (!d || typeof d !== 'object' || Array.isArray(d)) throw new Error('File bukan objek cadangan yang valid.');
+      const formatBaru = ['days','pengirim','barang','trx','diluar','setoran','pembayaran','riwayat','anakBuah','makanDays','absenMakan','bayarMakan'].some(k => Object.prototype.hasOwnProperty.call(d, k));
+      let hasil;
+      if (formatBaru) {
+        hasil = {
+          days: d.days ?? [], currentDay: d.currentDay || this.currentDay,
+          pengirim: d.pengirim ?? [], barang: d.barang ?? [], trx: d.trx ?? [],
+          diluar: d.diluar ?? [], setoran: d.setoran ?? [], pembayaran: d.pembayaran ?? [],
+          riwayat: d.riwayat ?? [], anakBuah: d.anakBuah ?? this.anakBuah,
+          makanDays: d.makanDays ?? [], absenMakan: d.absenMakan ?? [], bayarMakan: d.bayarMakan ?? [],
+          makanMulai: d.makanMulai || ''
+        };
+      } else if (Array.isArray(d.pengirimList) || Array.isArray(d.barangMasuk) || Array.isArray(d.transactions)) {
+        hasil = {
+          days: d.days || [], currentDay: d.currentDay || this.currentDay,
+          pengirim: (d.pengirimList || []).map(p => ({ id: uid() + Math.random(), hari: p.hari, nama: p.nama, jenis: p.jenis || 'Pengirim', ongkos: Number(p.ongkos) || 0 })),
+          barang: (d.barangMasuk || []).map(b => ({ id: uid() + Math.random(), hari: b.hari, pengirim: b.pengirim, nama: b.nama, dus: b.dus, qty: b.qty, modal: Number(b.modal) || 0 })),
+          trx: (d.transactions || []).map(t => ({ id: t.id || (uid() + Math.random()), hari: t.hari, pengirim: t.pengirim, barang: t.namaBarang, jenis: t.jenis || 'Lain', pengecer: t.pengecer || '', qty: t.qty, harga: Number(t.harga) || 0, total: Number(t.total) || 0, bayar: t.bayar === undefined ? '' : t.bayar, status: t.status || '', tanggal: t.tanggal || '' })),
+          diluar: (d.langganan || []).map(x => ({ id: x.id || (uid() + Math.random()), hari: x.hari, nama: x.nama, items: x.items || [], bayar: x.bayar === undefined ? '' : x.bayar, status: x.status || '', tanggal: x.tanggal || '' })),
+          setoran: d.setoran || [], pembayaran: [], riwayat: [], anakBuah: d.anakBuah || this.anakBuah,
+          makanDays: d.makanDays || [], absenMakan: d.absenMakan || [], bayarMakan: d.bayarMakan || [], makanMulai: d.makanMulai || ''
+        };
+      } else throw new Error('Format cadangan tidak dikenali atau tidak memiliki bagian data utama.');
+      this.validasiStateCloud(hasil);
+      if (!hasil.days.length && !hasil.pengirim.length && !hasil.barang.length && !hasil.trx.length && !hasil.diluar.length && !hasil.setoran.length && !hasil.pembayaran.length && !hasil.riwayat.length) throw new Error('Cadangan tampak kosong. Pemulihan dibatalkan untuk melindungi data.');
+      return hasil;
+    },
     importJSON(e) {
       const f = e.target.files && e.target.files[0];
       if (!f) return;
       const r = new FileReader();
       r.onload = () => {
-        let d;
-        try { d = JSON.parse(r.result); } catch (err) { alert('File cadangan tidak bisa dibaca.'); e.target.value = ''; return; }
-        if (!d || typeof d !== 'object') { alert('File cadangan tidak bisa dibaca.'); e.target.value = ''; return; }
-        this.ask(this.ringkasanCadangan(d), () => this.terapkanCadangan(d, e), 'Muat');
+        try {
+          const d = JSON.parse(r.result);
+          const checked = this.siapkanCadangan(d);
+          this.ask(this.ringkasanCadangan(checked), () => this.terapkanCadangan(checked, e), 'Muat');
+        } catch (err) { alert('Cadangan ditolak: ' + (err.message || 'format tidak valid') + '. Data aplikasi tidak diubah.'); e.target.value = ''; }
       };
+      r.onerror = () => { alert('File cadangan gagal dibaca.'); e.target.value = ''; };
       r.readAsText(f);
     },
     ringkasanCadangan(d) {
@@ -3150,42 +3276,29 @@ function app() {
       return 'Data di aplikasi akan diganti dengan isi file ini: ' + bagian.join(' · ') + '.' + tgl + ' Lanjutkan?';
     },
     async terapkanCadangan(d, e) {
+      const previous = this.snapshotState();
       try {
-          // format baru
-          if (d.pengirim || d.trx) {
-            this.days = d.days || []; this.pengirim = d.pengirim || []; this.barang = d.barang || []; this.trx = d.trx || []; this.diluar = d.diluar || []; this.setoran = d.setoran || []; this.pembayaran = Array.isArray(d.pembayaran) ? d.pembayaran : undefined; this.riwayat = d.riwayat || [];
-          } else {
-            // format versi sebelumnya (cadangan lama)
-            this.days = d.days || [];
-            this.pengirim = (d.pengirimList || []).map(p => ({ id: uid() + Math.random(), hari: p.hari, nama: p.nama, jenis: p.jenis || 'Pengirim', ongkos: Number(p.ongkos) || 0 }));
-            this.barang = (d.barangMasuk || []).map(b => ({ id: uid() + Math.random(), hari: b.hari, pengirim: b.pengirim, nama: b.nama, dus: b.dus, qty: b.qty, modal: Number(b.modal) || 0 }));
-            this.trx = (d.transactions || []).map(t => ({ id: t.id, hari: t.hari, pengirim: t.pengirim, barang: t.namaBarang, jenis: t.jenis || 'Lain', pengecer: t.pengecer || '', qty: t.qty, harga: Number(t.harga) || 0, total: Number(t.total) || 0, bayar: t.bayar === undefined ? '' : t.bayar, status: t.status || '', tanggal: t.tanggal || '' }));
-            this.diluar = (d.langganan || []).map(x => ({ id: x.id, hari: x.hari, nama: x.nama, items: x.items || [], bayar: x.bayar === undefined ? '' : x.bayar, status: x.status || '', tanggal: x.tanggal || '' }));
-            this.setoran = d.setoran || [];
-            this.pembayaran = undefined;
-          }
-          if (d.currentDay) this.currentDay = d.currentDay;
-          if (d.anakBuah) this.anakBuah = d.anakBuah;
-          if (d.makanDays) this.makanDays = d.makanDays;
-          if (d.absenMakan) this.absenMakan = d.absenMakan;
-          if (d.bayarMakan) this.bayarMakan = d.bayarMakan;
-          if (d.makanMulai) this.makanMulai = d.makanMulai;
-          this.normalizeTrx();
-          if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
-          this.isiHariMakan();
-          const restored = this.snapshotState();
-          // Tulis langsung ke IndexedDB sebelum menyatakan pemulihan berhasil.
-          await this._saveQueue.catch(() => {});
-          await dbSet(KEY, restored);
-          const restoredAt = Date.now();
-          await dbSet('ats_meta_local_saved', restoredAt);
-          this._lastSnapshot = restored; this._pendingLocalSnapshot = '';
-          this._cloudConflict = false;
-          await this.updateStorageInfo();
-          this.dorongCloudNanti();
-          alert('Cadangan berhasil dimuat dan disimpan ke IndexedDB.');
-        } catch (err) { alert('Pemulihan gagal disimpan: ' + (err && err.message ? err.message : 'periksa ruang penyimpanan')); }
-        e.target.value = '';
+        const checked = this.siapkanCadangan(d);
+        this.terapkanState(checked);
+        if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
+        this.normalizeTrx();
+        this.isiHariMakan();
+        const restored = this.snapshotState();
+        // Tunggu antrean lama dan simpan satu snapshot tervalidasi sebelum status berubah.
+        await this._saveQueue;
+        await dbSet(KEY, restored);
+        const restoredAt = Date.now();
+        await dbSet('ats_meta_local_saved', restoredAt);
+        this._lastSnapshot = restored; this._pendingLocalSnapshot = '';
+        this._cloudConflict = false;
+        await this.updateStorageInfo();
+        this.dorongCloudNanti();
+        alert('Cadangan berhasil divalidasi dan disimpan ke IndexedDB. Cloud akan disinkronkan setelahnya.');
+      } catch (err) {
+        try { this.terapkanState(JSON.parse(previous)); this._lastSnapshot = previous; } catch (_) {}
+        alert('Pemulihan dibatalkan: ' + (err && err.message ? err.message : 'gagal menyimpan ke IndexedDB') + '. Data sebelumnya dipertahankan.');
+      }
+      if (e && e.target) e.target.value = '';
     },
   };
 }
