@@ -165,6 +165,14 @@
             <p class="font-bold text-slate-900">Cadangan data</p>
             <p class="text-xs" :class="backupDue ? 'text-rose-600 font-semibold' : 'text-slate-500'" x-text="backupMsg()"></p>
             <p class="text-[11px] text-stone-400" x-show="storageInfo" x-text="storageInfo"></p>
+            <div class="mt-2 text-xs">
+              <button x-show="!cloudUser" @click="loginCloud()" class="btn btn-navy !py-1 !px-2.5 !text-xs">Masuk dengan Google (simpan ke cloud)</button>
+              <div x-show="cloudUser" x-cloak class="space-y-1">
+                <p class="text-stone-600">Cloud: <span class="font-semibold" x-text="cloudUser"></span></p>
+                <p class="text-stone-400" x-text="cloudStatus"></p>
+                <button @click="logoutCloud()" class="text-rose-600 font-semibold">Keluar</button>
+              </div>
+            </div>
           </div>
           <div class="flex flex-wrap gap-2">
             <button @click="exportJSON()" class="btn btn-navy">Simpan cadangan</button>
@@ -1308,8 +1316,27 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 const KEY = 'ats_tsurayya_v1';
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDljbLclH6auONLsFlIp6T2UND_HG0LSrk",
+  authDomain: "ats-tsurayya.firebaseapp.com",
+  projectId: "ats-tsurayya",
+  storageBucket: "ats-tsurayya.firebasestorage.app",
+  messagingSenderId: "166072371263",
+  appId: "1:166072371263:web:49a9b8bfdaf9522f65108a"
+};
+let fbAuth = null, fbDb = null;
+try {
+  if (typeof firebase !== 'undefined') {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    fbAuth = firebase.auth();
+    fbDb = firebase.firestore();
+  }
+} catch (e) { fbAuth = null; fbDb = null; }
 const DB_NAME = 'ats_tsurayya_db', DB_STORE = 'kv';
 function dbOpen() {
   return new Promise((res, rej) => {
@@ -1351,6 +1378,8 @@ function app() {
     anakBuah: [], makanDays: [], absenMakan: [], bayarMakan: [],
     makanMulai: '',
     siapSimpan: false,
+    cloudUser: null,
+    cloudStatus: '',
     storageInfo: '',
     bayarMakanForm: { anakId: '', tanggal: today(), jumlah: '', editId: null },
     pembayaran: undefined,
@@ -1390,8 +1419,9 @@ function app() {
       this.isiHariMakan();
       this.$watch('currentDay', () => { if (this.view === 'jual') this.bukaHariMakan(); });
       this.$watch(() => JSON.stringify({ days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, makanMulai: this.makanMulai }),
-        v => { if (!this.siapSimpan) return; dbSet(KEY, v).catch(() => { try { localStorage.setItem(KEY, v); } catch (e) {} }); });
+        v => { if (!this.siapSimpan) return; localStorage.setItem('ats_local_saved', String(Date.now())); dbSet(KEY, v).catch(() => { try { localStorage.setItem(KEY, v); } catch (e) {} }); this.dorongCloudNanti(); });
       this.initDB();
+      this.initCloud();
       if (location.hash) { const h = location.hash.slice(1); if (this.menu.some(m => m.id === h)) this.view = h; }
     },
 
@@ -2627,6 +2657,49 @@ function app() {
       this.isiHariMakan();
     },
     snapshotState() { return JSON.stringify({ days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, makanMulai: this.makanMulai }); },
+    initCloud() {
+      if (!fbAuth) return;
+      fbAuth.getRedirectResult().catch(() => {});
+      fbAuth.onAuthStateChanged(async u => {
+        this.cloudUser = u ? (u.email || 'akun Google') : null;
+        if (u) {
+          try { await this.sinkronCloud(); } catch (e) { this.cloudStatus = 'Gagal sinkron: periksa koneksi internet'; }
+        }
+      });
+    },
+    loginCloud() {
+      if (!fbAuth) { this.cloudStatus = 'Firebase belum termuat, periksa koneksi'; return; }
+      fbAuth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+    },
+    logoutCloud() { if (fbAuth) fbAuth.signOut(); this.cloudStatus = ''; },
+    async sinkronCloud() {
+      const ref = fbDb.collection('ats').doc('data');
+      const snap = await ref.get();
+      const lokal = Number(localStorage.getItem('ats_local_saved') || 0);
+      if (snap.exists) {
+        const cloud = snap.data();
+        if ((Number(cloud.updatedAt) || 0) > lokal) {
+          this.terapkanState(JSON.parse(cloud.json));
+          await dbSet(KEY, cloud.json);
+          localStorage.setItem('ats_local_saved', String(cloud.updatedAt));
+          this.cloudStatus = 'Data dimuat dari cloud';
+          return;
+        }
+      }
+      await this.dorongCloud();
+    },
+    async dorongCloud() {
+      if (!fbDb || !this.cloudUser) return;
+      await fbDb.collection('ats').doc('data').set({ json: this.snapshotState(), updatedAt: Date.now() });
+      this.cloudStatus = 'Tersimpan ke cloud · ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    },
+    dorongCloudNanti() {
+      if (!this.cloudUser || !fbDb) return;
+      clearTimeout(this._cloudTimer);
+      this._cloudTimer = setTimeout(() => {
+        this.dorongCloud().catch(() => { this.cloudStatus = 'Belum tersimpan ke cloud, akan dicoba lagi'; });
+      }, 2000);
+    },
     async initDB() {
       try {
         const raw = await dbGet(KEY);
