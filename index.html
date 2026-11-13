@@ -167,6 +167,7 @@
             <p class="text-[11px] text-stone-400" x-show="storageInfo" x-text="storageInfo"></p>
             <div class="mt-2 text-xs">
               <button x-show="!cloudUser" @click="loginCloud()" class="btn btn-navy !py-1 !px-2.5 !text-xs">Masuk dengan Google (simpan ke cloud)</button>
+              <p x-show="!cloudUser && cloudStatus" x-cloak class="mt-1 text-[11px] text-rose-600 font-semibold" x-text="cloudStatus"></p>
               <div x-show="cloudUser" x-cloak class="space-y-1">
                 <p class="text-stone-600">Cloud: <span class="font-semibold" x-text="cloudUser"></span></p>
                 <p class="text-stone-400" x-text="cloudStatus"></p>
@@ -2659,7 +2660,7 @@ function app() {
     snapshotState() { return JSON.stringify({ days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, makanMulai: this.makanMulai }); },
     initCloud() {
       if (!fbAuth) return;
-      fbAuth.getRedirectResult().catch(() => {});
+      fbAuth.getRedirectResult().then(r => { if (r && r.user) this.cloudStatus = 'Berhasil masuk: ' + (r.user.email || ''); }).catch(e => { this.cloudStatus = 'Login gagal: ' + (e.code || e.message || 'tidak diketahui'); });
       fbAuth.onAuthStateChanged(async u => {
         this.cloudUser = u ? (u.email || 'akun Google') : null;
         if (u) {
@@ -2669,7 +2670,7 @@ function app() {
     },
     loginCloud() {
       if (!fbAuth) { this.cloudStatus = 'Firebase belum termuat, periksa koneksi'; return; }
-      fbAuth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+      fbAuth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()).catch(e => { this.cloudStatus = 'Login gagal: ' + (e.code || e.message || 'tidak diketahui'); });
     },
     logoutCloud() { if (fbAuth) fbAuth.signOut(); this.cloudStatus = ''; },
     async sinkronCloud() {
