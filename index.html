@@ -2671,7 +2671,11 @@ function app() {
     },
     loginCloud() {
       if (!fbAuth) { this.cloudStatus = 'Firebase belum termuat, periksa koneksi'; return; }
-      fbAuth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()).catch(e => { this.cloudStatus = 'Login gagal: ' + (e.code || e.message || 'tidak diketahui'); });
+      this.cloudStatus = 'Membuka jendela login Google...';
+      fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => {
+        const pesan = e.code === 'auth/popup-blocked' ? ' (izinkan pop-up untuk situs ini di Chrome)' : '';
+        this.cloudStatus = 'Login gagal: ' + (e.code || e.message || 'tidak diketahui') + pesan;
+      });
     },
     logoutCloud() { if (fbAuth) fbAuth.signOut(); this.cloudStatus = ''; },
     async sinkronCloud() {
