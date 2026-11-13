@@ -1363,9 +1363,13 @@ function dbOpen() {
 async function dbGet(k) {
   const db = await dbOpen();
   return new Promise((res, rej) => {
-    const q = db.transaction(DB_STORE).objectStore(DB_STORE).get(k);
+    const tx = db.transaction(DB_STORE, 'readonly');
+    const q = tx.objectStore(DB_STORE).get(k);
     q.onsuccess = () => res(q.result);
     q.onerror = () => rej(q.error);
+    tx.oncomplete = () => db.close();
+    tx.onerror = () => db.close();
+    tx.onabort = () => db.close();
   });
 }
 async function dbSet(k, v) {
@@ -1373,8 +1377,19 @@ async function dbSet(k, v) {
   return new Promise((res, rej) => {
     const tx = db.transaction(DB_STORE, 'readwrite');
     tx.objectStore(DB_STORE).put(v, k);
-    tx.oncomplete = () => res();
-    tx.onerror = () => rej(tx.error);
+    tx.oncomplete = () => { db.close(); res(); };
+    tx.onerror = () => { const e = tx.error; db.close(); rej(e); };
+    tx.onabort = () => { const e = tx.error; db.close(); rej(e || new Error('Transaksi IndexedDB dibatalkan')); };
+  });
+}
+async function dbDelete(k) {
+  const db = await dbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(DB_STORE, 'readwrite');
+    tx.objectStore(DB_STORE).delete(k);
+    tx.oncomplete = () => { db.close(); res(); };
+    tx.onerror = () => { const e = tx.error; db.close(); rej(e); };
+    tx.onabort = () => { const e = tx.error; db.close(); rej(e || new Error('Transaksi IndexedDB dibatalkan')); };
   });
 }
 const STAT = ['Lunas Cash', 'Lunas Tf', 'TU Cash', 'TU Tf', 'Belum'];
@@ -1426,6 +1441,9 @@ function app() {
     _savingWatch: false,
     _saveQueue: Promise.resolve(),
     _lastSnapshot: '',
+    _lastBackupAt: 0,
+    _localReady: false,
+    _cloudTimer: null,
     init() {
       if (this._inited) return;
       this._inited = true;
@@ -1437,16 +1455,18 @@ function app() {
           if (!this.siapSimpan || this._savingWatch || v === this._lastSnapshot) return;
           this._lastSnapshot = v;
           this._saveQueue = this._saveQueue.catch(() => {}).then(async () => {
-            try {
-              await dbSet(KEY, v);
-            } catch (e) {
-              try { localStorage.setItem(KEY, v); } catch (err) {}
-            }
-            localStorage.setItem('ats_local_saved', String(Date.now()));
+            if (!this._localReady) throw new Error('Penyimpanan lokal belum siap');
+            await dbSet(KEY, v);
+            await dbSet('ats_meta_local_saved', Date.now());
+            await this.updateStorageInfo();
+            // Cloud hanya didorong setelah penyimpanan lokal berhasil.
+            this.dorongCloudNanti();
+          }).catch(err => {
+            this._lastSnapshot = '';
+            this.cloudStatus = 'Gagal menyimpan ke browser: ' + (err && err.message ? err.message : 'IndexedDB tidak tersedia');
           });
-          this.dorongCloudNanti();
         });
-      this.initDB().then(() => this.initCloud());
+      this.initDB().then(ok => { if (ok) this.initCloud(); });
       if (location.hash) { const h = location.hash.slice(1); if (this.menu.some(m => m.id === h)) this.view = h; }
     },
 
@@ -2687,7 +2707,7 @@ function app() {
       return 'tsurayya-' + p(d.getDate()) + p(d.getMonth() + 1) + d.getFullYear() + '.json';
     },
     cadanganPerlu() {
-      const t = Number(localStorage.getItem('ats_last_backup') || 0);
+      const t = Number(this._lastBackupAt || 0);
       return !t || (Date.now() - t) >= 3 * 24 * 60 * 60 * 1000;
     },
     terapkanState(s) {
@@ -2748,6 +2768,7 @@ function app() {
       });
     },
     loginCloud() {
+      if (!this._localReady) { this.cloudStatus = 'Penyimpanan lokal belum siap. Login/sinkronisasi cloud ditahan demi keamanan data.'; return; }
       if (!fbAuth) { this.cloudStatus = 'Firebase belum termuat, periksa koneksi'; return; }
       this._manualLogin = true;
       this.cloudStatus = 'Membuka jendela login Google...';
@@ -2759,31 +2780,54 @@ function app() {
     },
     logoutCloud() { if (fbAuth) fbAuth.signOut(); this.cloudStatus = ''; },
     async sinkronCloud() {
+      if (!this._localReady) throw new Error('IndexedDB belum siap; sinkronisasi dihentikan demi keamanan data.');
       const ref = fbDb.collection('ats').doc('data');
       const snap = await ref.get();
-      const lokal = Number(localStorage.getItem('ats_local_saved') || 0);
+      const localSavedAt = Number(await dbGet('ats_meta_local_saved') || 0);
+      const localJson = this.snapshotState();
       if (snap.exists) {
-        const cloud = snap.data();
-        if ((Number(cloud.updatedAt) || 0) > lokal && cloud.json) {
-          this.terapkanState(JSON.parse(cloud.json));
+        const cloud = snap.data() || {};
+        if (cloud.json && (Number(cloud.updatedAt) || 0) > localSavedAt) {
+          const cloudState = JSON.parse(cloud.json);
+          this.terapkanState(cloudState);
           const normalizedJson = this.snapshotState();
           await dbSet(KEY, normalizedJson);
-          localStorage.setItem('ats_local_saved', String(cloud.updatedAt));
+          await dbSet('ats_meta_local_saved', Number(cloud.updatedAt) || Date.now());
+          this._lastSnapshot = normalizedJson;
+          await this.updateStorageInfo();
           this.cloudStatus = 'Data dimuat dari cloud';
+          return;
+        }
+        if (cloud.json === localJson) {
+          this.cloudStatus = 'Data sudah sinkron';
+          return;
+        }
+        // Jika versi lokal dan cloud berbeda tetapi waktu tidak meyakinkan,
+        // jangan menimpa salah satu secara otomatis.
+        if (cloud.json && localSavedAt && Number(cloud.updatedAt) === localSavedAt) {
+          this.cloudStatus = 'Ada perbedaan data lokal dan cloud. Perlu pemeriksaan sebelum sinkronisasi.';
           return;
         }
       }
       await this.dorongCloud();
     },
     async dorongCloud() {
-      if (!fbDb || !this.cloudUser) return;
+      if (!fbDb || !this.cloudUser || !this._localReady) return;
+      await this._saveQueue;
+      const json = this.snapshotState();
+      const ref = fbDb.collection('ats').doc('data');
+      const current = await ref.get();
+      if (current.exists && current.data() && current.data().json === json) {
+        this.cloudStatus = 'Data sudah sinkron';
+        return;
+      }
       const now = Date.now();
-      await fbDb.collection('ats').doc('data').set({ json: this.snapshotState(), updatedAt: now });
-      localStorage.setItem('ats_local_saved', String(now));
+      await ref.set({ json, updatedAt: now, schemaVersion: 2 }, { merge: true });
+      await dbSet('ats_meta_local_saved', now);
       this.cloudStatus = 'Tersimpan ke cloud · ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     },
     dorongCloudNanti() {
-      if (!this.cloudUser || !fbDb || !this.siapSimpan) return;
+      if (!this.cloudUser || !fbDb || !this.siapSimpan || !this._localReady) return;
       clearTimeout(this._cloudTimer);
       this._cloudTimer = setTimeout(() => {
         this.dorongCloud().catch(() => { this.cloudStatus = 'Belum tersimpan ke cloud, akan dicoba lagi'; });
@@ -2791,33 +2835,67 @@ function app() {
     },
     async initDB() {
       this.siapSimpan = false;
+      this._localReady = false;
       try {
-        const raw = await dbGet(KEY) || localStorage.getItem(KEY);
+        let raw = await dbGet(KEY);
+        const legacyRaw = localStorage.getItem(KEY);
         if (raw) {
-          this.terapkanState(JSON.parse(raw));
+          const parsed = JSON.parse(raw);
+          // Simpan salinan legacy di IndexedDB sebelum pembersihan LocalStorage.
+          if (legacyRaw !== null) await dbSet('ats_legacy_local_backup', legacyRaw);
+          this.terapkanState(parsed);
+          const normalized = this.snapshotState();
+          if (normalized !== raw) await dbSet(KEY, normalized);
+        } else if (legacyRaw) {
+          const legacyState = JSON.parse(legacyRaw);
+          // Backup legacy dan hasil migrasi harus berhasil ditulis sebelum sumber dihapus.
+          await dbSet('ats_legacy_local_backup', legacyRaw);
+          this.terapkanState(legacyState);
+          await dbSet(KEY, this.snapshotState());
         } else {
           if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
           this.isiHariMakan();
           await dbSet(KEY, this.snapshotState());
         }
-      } catch (e) {}
-      if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
-      this.siapSimpan = true;
-      // Tandai kondisi awal sebagai sudah dimuat agar refresh tidak memicu
-      // penyimpanan ulang tanpa ada perubahan data dari pengguna.
-      this._lastSnapshot = this.snapshotState();
-      this.updateStorageInfo();
+        if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
+        const oldSavedAt = Number(localStorage.getItem('ats_local_saved') || 0);
+        const oldBackupAt = Number(localStorage.getItem('ats_last_backup') || 0);
+        if (oldSavedAt && !(await dbGet('ats_meta_local_saved'))) await dbSet('ats_meta_local_saved', oldSavedAt);
+        if (oldBackupAt && !(await dbGet('ats_meta_last_backup'))) await dbSet('ats_meta_last_backup', oldBackupAt);
+        // Bersihkan hanya kunci ATS lama setelah data dan metadata berhasil diamankan.
+        for (const k of ['ats_tsurayya_v1', 'ats_local_saved', 'ats_last_backup']) {
+          try { localStorage.removeItem(k); } catch (_) {}
+        }
+        this._lastBackupAt = Number(await dbGet('ats_meta_last_backup') || 0);
+        this.backupDue = this.cadanganPerlu();
+        this._localReady = true;
+        this.cloudStatus = this.cloudStatus || 'Data lokal siap';
+        this._lastSnapshot = this.snapshotState();
+        this.siapSimpan = true;
+        await this.updateStorageInfo();
+        return true;
+      } catch (e) {
+        this._localReady = false;
+        this.siapSimpan = false;
+        this.cloudStatus = 'PENYIMPANAN TERKUNCI: IndexedDB gagal dibaca/ditulis. Data tidak akan dikirim ke cloud atau ditimpa. Periksa izin/ruang browser dan pulihkan dari cadangan.';
+        this.storageInfo = 'Penyimpanan lokal gagal diperiksa';
+        return false;
+      }
     },
     async updateStorageInfo() {
       try {
-        if (navigator.storage && navigator.storage.persist) await navigator.storage.persist();
-        const e = await navigator.storage.estimate();
-        const mb = n => (n / 1048576).toFixed(1).replace('.', ',') + ' MB';
-        this.storageInfo = 'Data tersimpan: ' + mb(e.usage || 0) + ' dari ' + mb(e.quota || 0);
-      } catch (err) { this.storageInfo = ''; }
+        // Hitung payload milik ATS-TSURAYYA saja, bukan seluruh cache/origin browser.
+        const raw = await dbGet(KEY);
+        const data = typeof raw === 'string' ? raw : this.snapshotState();
+        const bytes = new Blob([data]).size;
+        const mb = (bytes / 1048576).toFixed(2).replace('.', ',') + ' MB';
+        this.storageInfo = 'Data tersimpan: ' + mb + ' (perkiraan IndexedDB)';
+      } catch (err) {
+        this.storageInfo = 'Ukuran data lokal tidak dapat dibaca';
+      }
     },
     backupMsg() {
-      const t = Number(localStorage.getItem('ats_last_backup') || 0);
+      const t = Number(this._lastBackupAt || 0);
       if (!t) return 'Belum pernah dicadangkan. Simpan cadangan sekarang.';
       if (this.backupDue) return 'Sudah 3 hari sejak cadangan terakhir. Simpan cadangan sekarang.';
       return 'Cadangan terakhir: ' + new Date(t).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + '. Berikutnya dalam 3 hari.';
@@ -2828,7 +2906,11 @@ function app() {
       a.href = URL.createObjectURL(blob);
       a.download = this.namaFileCadangan();
       a.click();
-      localStorage.setItem('ats_last_backup', String(Date.now()));
+      this._lastBackupAt = Date.now();
+      dbSet('ats_meta_last_backup', this._lastBackupAt).catch(() => {
+        this.backupDue = true;
+        this.cloudStatus = 'Cadangan diunduh, tetapi tanggal cadangan lokal gagal disimpan.';
+      });
       this.backupDue = false;
     },
     importJSON(e) {
