@@ -2816,7 +2816,11 @@ function app() {
     },
     cloudDocId(value) { return encodeURIComponent(String(value)).slice(0, 1400) || 'kosong'; },
     cloudStableJson(value) {
-      const rapikan = v => Array.isArray(v) ? v.map(rapikan) : (v && typeof v === 'object' ? Object.keys(v).sort().reduce((o, k) => { o[k] = rapikan(v[k]); return o; }, {}) : v);
+      // Urutan hasil query Firestore tidak dijamin sama dengan urutan IndexedDB.
+      // Untuk perbandingan sinkronisasi, urutkan elemen array secara kanonis.
+      const rapikan = v => Array.isArray(v)
+        ? v.map(rapikan).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+        : (v && typeof v === 'object' ? Object.keys(v).sort().reduce((o, k) => { o[k] = rapikan(v[k]); return o; }, {}) : v);
       return JSON.stringify(rapikan(value));
     },
     cloudRecordCollections() {
@@ -2985,8 +2989,31 @@ function app() {
         this.cloudStatus = 'Perubahan lokal tersimpan ke cloud';
         return;
       }
+      // Waktu versi sama tetapi isi berbeda: pengguna telah memilih data lokal
+      // sebagai sumber utama. Tulis lokal, baca ulang untuk verifikasi, baru
+      // hapus snapshot JSON lama (metadata dokumen ats/data tetap dipertahankan).
       this._cloudConflict = true;
-      this.cloudStatus = 'KONFLIK DATA: isi lokal dan cloud berbeda pada versi waktu yang sama. Tidak ada data yang ditimpa.';
+      this.cloudStatus = 'Menyelaraskan data lokal yang telah dipilih...';
+      const version = await this.tulisStateCloudTerpisah(localState, cloudVersion);
+      const verifyMetaSnap = await ref.get();
+      const verifyMeta = verifyMetaSnap.exists ? (verifyMetaSnap.data() || {}) : {};
+      const verifiedState = await this.bacaStateCloudTerpisah(verifyMeta);
+      if (this.cloudStableJson(verifiedState) !== localJson) {
+        throw new Error('Verifikasi gagal. JSON lama tetap dipertahankan dan data lokal tidak dihapus.');
+      }
+      // Bersihkan hanya field json lama; jangan hapus dokumen ats/data atau metadata.
+      if (typeof verifyMeta.json === 'string') {
+        await ref.update({ json: firebase.firestore.FieldValue.delete() });
+      }
+      const normalizedLocal = JSON.stringify(localState);
+      await dbSet(KEY, normalizedLocal);
+      await dbSet('ats_meta_local_saved', version);
+      this._lastSnapshot = normalizedLocal;
+      this._cloudVersion = version;
+      this._cloudJson = localJson;
+      this._cloudConflict = false;
+      await this.updateStorageInfo();
+      this.cloudStatus = 'Konflik selesai: data lokal tersinkron, JSON lama dibersihkan';
     },
     async dorongCloud() {
       if (!fbDb || !this.cloudUser || !this._localReady) return;
