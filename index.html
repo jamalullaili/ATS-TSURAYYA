@@ -121,7 +121,7 @@
         </div>
         <div class="flex items-center gap-2" x-show="view !== 'dash' && view !== 'nota' && view !== 'tagihan'">
           <span class="text-xs text-slate-500">Tanggal</span>
-          <input type="date" x-model="currentDay" :max="today()" @change="setDay(currentDay)" class="inp w-44">
+          <input type="date" x-model="currentDay" @change="setDay(currentDay)" class="inp w-44">
         </div>
       </div>
 
@@ -150,15 +150,15 @@
             </div>
             <div class="grid grid-cols-7 gap-1">
               <template x-for="(c, i) in calHari()" :key="i">
-                <button @click="c && !c.future && (setDay(c.iso), go('jual'))" :disabled="!c || c.future"
+                <button @click="c && (setDay(c.iso), go('jual'))" :disabled="!c"
                         class="aspect-square rounded-lg text-xs font-semibold flex flex-col items-center justify-center transition"
-                        :class="!c ? 'invisible' : (c.future ? 'text-slate-300 cursor-not-allowed' : (c.iso === currentDay ? 'bg-stone-900 text-white' : (c.ada ? 'bg-stone-100 text-stone-900 hover:bg-stone-200' : 'text-stone-500 hover:bg-stone-50')))">
+                        :class="!c ? 'invisible' : (c.iso === currentDay ? 'bg-stone-900 text-white' : (c.ada ? 'bg-stone-100 text-stone-900 hover:bg-stone-200' : 'text-stone-500 hover:bg-stone-50'))">
                   <span x-text="c ? c.n : ''"></span>
                   <span x-show="c && c.ada && c.iso !== currentDay" class="mt-0.5 h-1 w-1 rounded-full bg-emerald-500"></span>
                 </button>
               </template>
             </div>
-            <p class="text-[11px] text-slate-400">Klik tanggal untuk membuka catatan. Tanggal setelah hari ini tidak dapat dipilih. Titik hijau = ada transaksi.</p>
+            <p class="text-[11px] text-slate-400">Klik tanggal untuk membuka catatan. Titik hijau = ada transaksi.</p>
           </div>
             <div class="card p-5 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -355,7 +355,7 @@
           </div>
           <div class="flex items-center gap-2">
             <label class="text-xs font-semibold text-stone-700">Ubah Tanggal:</label>
-            <input type="date" x-model="currentDay" :max="today()" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-sm font-bold bg-white">
+            <input type="date" x-model="currentDay" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-sm font-bold bg-white">
           </div>
         </div>
 
@@ -554,7 +554,7 @@
           </div>
           <div class="flex items-center gap-2">
             <label class="text-xs font-semibold text-stone-700">Ubah Tanggal:</label>
-            <input type="date" x-model="currentDay" :max="today()" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-sm font-bold bg-white">
+            <input type="date" x-model="currentDay" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-sm font-bold bg-white">
           </div>
         </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -871,7 +871,7 @@
                   <div class="flex items-center gap-1.5 flex-1">
                     <span class="text-[10px] font-bold text-slate-400">#<span x-text="i + 1"></span></span>
                     <label class="text-[10px] font-semibold text-slate-500">Tgl:</label>
-                    <input type="date" x-model="r.tgl" :max="today()" class="inp !py-0.5 !px-1.5 !text-xs !w-auto font-medium bg-white">
+                    <input type="date" x-model="r.tgl" class="inp !py-0.5 !px-1.5 !text-xs !w-auto font-medium bg-white">
                   </div>
                   <button @click="ask('Hapus baris rincian bon ini?', () => nota.rows.splice(i, 1))" class="text-slate-400 hover:text-rose-600 text-base font-bold px-1 transition" title="Hapus baris">&times;</button>
                 </div>
@@ -896,7 +896,7 @@
                   </div>
                   <div class="col-span-6">
                     <label class="block text-[9px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Tgl Titip</label>
-                    <input type="date" x-model="r.bayarTgl" :max="today()" class="inp !py-0.5 !px-1.5 !text-xs font-medium bg-white">
+                    <input type="date" x-model="r.bayarTgl" class="inp !py-0.5 !px-1.5 !text-xs font-medium bg-white">
                   </div>
                 </div>
               </div>
@@ -1656,10 +1656,7 @@ function app() {
       const base = this.calBulan || this.currentDay.slice(0, 7);
       const d = new Date(base + '-01T00:00:00');
       d.setMonth(d.getMonth() + n);
-      const bulanTujuan = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-      // Kalender tidak dapat digeser ke bulan setelah bulan berjalan.
-      if (bulanTujuan > this.today().slice(0, 7)) return;
-      this.calBulan = bulanTujuan;
+      this.calBulan = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     },
     calLabel() {
       const base = this.calBulan || this.currentDay.slice(0, 7);
@@ -1675,18 +1672,12 @@ function app() {
       for (let i = 0; i < offset; i++) hasil.push(null);
       for (let d = 1; d <= jumlah; d++) {
         const iso = y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-        hasil.push({ n: d, iso, future: iso > this.today(), ada: this.trx.some(t => t.hari === iso) || this.pengirim.some(p => p.hari === iso) });
+        hasil.push({ n: d, iso, ada: this.trx.some(t => t.hari === iso) || this.pengirim.some(p => p.hari === iso) });
       }
       while (hasil.length % 7) hasil.push(null);
       return hasil;
     },
-    setDay(d) {
-      if (!d) return;
-      // Tolak tanggal masa depan agar catatan tidak salah masuk ke hari esok.
-      if (d > this.today()) { this.currentDay = this.today(); return; }
-      if (!this.days.includes(d)) this.days.push(d);
-      this.currentDay = d;
-    },
+    setDay(d) { if (!d) return; if (!this.days.includes(d)) this.days.push(d); this.currentDay = d; },
     ask(msg, fn, label) { this.confirmBox = { open: true, msg, fn, label: label || 'Hapus' }; },
     jalankanKonfirmasi() {
       const popupSebelumnyaTerbuka = !!this.modal.open;
@@ -2407,7 +2398,8 @@ function app() {
       return jual - modal - ongkos;
     },
     hariDetail(m) {
-      return this.days.filter(d => d <= this.today() && d.startsWith(m)).sort().map(d => {
+      // Menu Keuntungan hanya menampilkan catatan sampai dengan hari ini.
+      return this.days.filter(d => d <= today() && d.startsWith(m)).sort().map(d => {
         const t = this.trx.filter(x => x.hari === d);
         const jual = t.reduce((s, x) => s + (Number(x.total) || 0), 0);
         const bayar = t.reduce((s, x) => s + (this.hasBayar(x) ? Number(x.bayar) : 0), 0);
@@ -2420,12 +2412,12 @@ function app() {
     },
     sumHari(f) { return this.hariDetail(this.bulanAktif()).reduce((s, h) => s + (h[f] || 0), 0); },
     bulanList() {
-      const hariSampaiHariIni = this.days.filter(d => d <= this.today());
-      const makanSampaiHariIni = this.bayarMakan.filter(b => b.tanggal && b.tanggal <= this.today());
-      const ms = [...new Set([...hariSampaiHariIni, ...makanSampaiHariIni.map(b => b.tanggal)].map(d => d.slice(0, 7)))].sort();
+      const daysSampaiHariIni = this.days.filter(d => d && d <= today());
+      const makanSampaiHariIni = this.bayarMakan.filter(b => b.tanggal && b.tanggal <= today());
+      const ms = [...new Set([...daysSampaiHariIni, ...makanSampaiHariIni.map(b => b.tanggal)].map(d => d.slice(0, 7)))].sort();
       return ms.map(m => {
-        const luarHari = makanSampaiHariIni.filter(b => b.tanggal.startsWith(m) && !hariSampaiHariIni.includes(b.tanggal)).reduce((s, b) => s + (Number(b.jumlah) || 0), 0);
-        return { bulan: m, hari: hariSampaiHariIni.filter(d => d.startsWith(m)).length, untung: this.hariDetail(m).reduce((s, h) => s + h.untung, 0) - luarHari };
+        const luarHari = makanSampaiHariIni.filter(b => b.tanggal.startsWith(m) && !daysSampaiHariIni.includes(b.tanggal)).reduce((s, b) => s + (Number(b.jumlah) || 0), 0);
+        return { bulan: m, hari: daysSampaiHariIni.filter(d => d.startsWith(m)).length, untung: this.hariDetail(m).reduce((s, h) => s + h.untung, 0) - luarHari };
       });
     },
     bulanAktif() { const l = this.bulanList(); if (this.pickMonth && l.some(b => b.bulan === this.pickMonth)) return this.pickMonth; return l.length ? l[l.length - 1].bulan : ''; },
