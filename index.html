@@ -133,20 +133,8 @@
           <p class="text-sm text-sky-100 mt-1">Supplier dan Distributor Hasil Bumi &middot; Los H No 54</p>
                   </div>
 
-        <div class="card p-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p class="font-bold text-slate-900">Cadangan data</p>
-            <p class="text-xs" :class="backupDue ? 'text-rose-600 font-semibold' : 'text-slate-500'" x-text="backupMsg()"></p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button @click="exportJSON()" class="btn btn-navy">Simpan cadangan</button>
-            <button @click="ask('Muat cadangan akan mengganti semua data yang ada di browser ini. Lanjutkan?', () => $refs.berkas.click(), 'Muat')" class="btn btn-light">Muat cadangan</button>
-            <input type="file" x-ref="berkas" accept=".json,application/json" class="hidden" @change="importJSON($event)">
-            <button @click="exportCSV()" class="btn btn-light">Excel (CSV)</button>
-          </div>
-        </div>
-
         <div class="grid lg:grid-cols-3 gap-6">
+          <div class="space-y-6">
           <div class="card p-6 space-y-4">
             <div>
               <h3 class="font-bold text-slate-900">Buka catatan</h3>
@@ -171,6 +159,19 @@
               </template>
             </div>
             <p class="text-[11px] text-slate-400">Klik tanggal untuk membuka catatan. Titik hijau = ada transaksi.</p>
+          </div>
+            <div class="card p-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p class="font-bold text-slate-900">Cadangan data</p>
+            <p class="text-xs" :class="backupDue ? 'text-rose-600 font-semibold' : 'text-slate-500'" x-text="backupMsg()"></p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button @click="exportJSON()" class="btn btn-navy">Simpan cadangan</button>
+            <button @click="$refs.berkas.click()" class="btn btn-light">Muat cadangan</button>
+            <input type="file" x-ref="berkas" accept=".json,application/json" class="hidden" @change="importJSON($event)">
+            <button @click="exportCSV()" class="btn btn-light">Excel (CSV)</button>
+          </div>
+        </div>
           </div>
           <div class="card p-6 lg:col-span-2">
             <h3 class="font-bold text-slate-900 mb-4">Menu</h3>
@@ -334,6 +335,7 @@
 
       <!-- ===== PENJUALAN (CATATAN) ===== -->
       <section x-show="view === 'jual'" x-cloak class="space-y-6">
+
         <!-- Banner Pemilih Tanggal Penjualan -->
         <div class="card p-4 bg-amber-50/70 border-amber-200 flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2">
@@ -659,6 +661,115 @@
         </div>
       </section>
 
+      <!-- ===== UANG MAKAN ===== -->
+      <section x-show="view === 'makan'" x-cloak class="space-y-6">
+        <div class="card p-5 space-y-3">
+          <h3 class="font-bold text-stone-900">Rekap Kehadiran</h3>
+          <p class="text-xs text-stone-500">Dihitung sejak pemberian uang makan terakhir. Hari yang sudah dibayar tidak dihitung lagi.</p>
+          <div class="grid grid-cols-3 gap-3">
+            <template x-for="a in anakBuah" :key="a.id">
+              <div class="rounded-xl border border-stone-200 bg-white p-2.5 text-center min-w-0">
+                <p class="rounded-lg bg-stone-100 border border-stone-200 py-1.5 text-sm font-bold text-stone-900 truncate" x-text="a.nama"></p>
+                <div class="mt-2 grid grid-cols-2 gap-1.5">
+                  <span class="block rounded-lg bg-emerald-50 border border-emerald-200 py-2 text-sm font-bold text-emerald-700" x-text="makanBelumHadir(a.id)"></span>
+                  <span class="block rounded-lg bg-rose-50 border border-rose-200 py-2 text-sm font-bold text-rose-700" x-text="makanBelumTidak(a.id)"></span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <template x-for="a in anakBuah" :key="a.id">
+          <div class="card p-5 space-y-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="font-bold text-stone-900 text-lg" x-text="a.nama"></p>
+                <p class="text-xs text-stone-500"
+                   x-text="'Sejak ' + (makanTerakhir(a.id) ? 'pemberian ' + dmy(makanTerakhir(a.id)) : 'awal pencatatan') + ': hadir ' + makanBelumHadir(a.id) + ' hari · tidak hadir ' + makanBelumTidak(a.id) + ' hari'"></p>
+              </div>
+              <div class="flex flex-col items-end gap-2 shrink-0">
+                <button @click="openBayarMakan(a)" class="btn btn-navy">+ Beri uang makan</button>
+                <button @click="ask('Hapus ' + a.nama + ' beserta riwayatnya?', () => hapusAnakBuah(a.id))" class="text-rose-600 text-xs font-semibold">Hapus</button>
+              </div>
+            </div>
+
+            <!-- Form pemberian (muncul untuk orang yang dipilih) -->
+            <div x-show="bayarMakanForm.anakId === a.id" x-cloak class="rounded-xl bg-stone-50 p-4 space-y-3">
+              <p class="text-xs font-semibold text-slate-600" x-text="bayarMakanForm.editId ? 'Ubah pemberian' : 'Pemberian baru'"></p>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
+                  <input type="date" x-model="bayarMakanForm.tanggal" class="inp">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah (Rp)</label>
+                  <input type="text" inputmode="numeric" :value="fmt(bayarMakanForm.jumlah)" @input="bayarMakanForm.jumlah = dg($event.target.value); $el.value = fmt(bayarMakanForm.jumlah)" placeholder="Rp 0" class="inp">
+                </div>
+              </div>
+              <p x-show="previewBayarMakan() && previewBayarMakan().hari > 0" class="text-xs text-stone-600"
+                 x-text="previewBayarMakan() ? 'Dihitung ' + previewBayarMakan().hari + ' hari hadir' + (bayarMakanForm.jumlah ? ' → ' + rp(previewBayarMakan().perHari) + ' per hari' : '') : ''"></p>
+              <div class="flex gap-2">
+                <button @click="resetBayarMakan()" class="btn btn-light">Batal</button>
+                <button @click="simpanBayarMakan()" class="btn btn-navy" x-text="bayarMakanForm.editId ? 'Simpan perubahan' : 'Simpan'"></button>
+              </div>
+            </div>
+
+            <!-- Hari sejak pemberian terakhir: ketuk untuk mengubah kehadiran -->
+            <div>
+              <p class="text-xs font-semibold text-slate-600 mb-1">Hari sejak pemberian terakhir <span class="font-normal text-stone-400">(hijau hadir, merah tidak; ketuk untuk ubah)</span></p>
+              <div class="grid grid-cols-5 sm:grid-cols-7 gap-1.5">
+                <template x-for="d in makanPeriode(a.id)" :key="d">
+                  <button type="button" @click="toggleAbsen(d, a.id)" class="rounded-lg py-1.5 text-center border"
+                    :class="absenHari(d, a.id) ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200'">
+                    <span class="block text-xs font-bold" x-text="dmy(d).slice(0, 5)"></span>
+                    <span class="block text-[9px] font-semibold" x-text="absenHari(d, a.id) ? 'Tidak' : 'Hadir'"></span>
+                  </button>
+                </template>
+              </div>
+              <p x-show="makanPeriode(a.id).length === 0" class="text-xs text-stone-400 italic mt-1">Belum ada hari baru sejak pemberian terakhir.</p>
+            </div>
+
+            <!-- Riwayat pemberian: dilipat, 3 terakhir -->
+            <div x-show="bayarMakanOrang(a.id).length > 0" x-data="{ buka: false, semua: false }" class="rounded-xl border border-stone-200 overflow-hidden">
+              <button type="button" @click="buka = !buka" class="w-full px-3 py-2 flex items-center justify-between text-xs font-semibold text-slate-600 hover:bg-stone-50">
+                <span x-text="'Riwayat pemberian (' + bayarMakanOrang(a.id).length + ')'"></span>
+                <span x-text="buka ? '▲' : '▼'"></span>
+              </button>
+              <div x-show="buka" x-cloak class="divide-y divide-stone-100 border-t border-stone-200">
+                <template x-for="(b, i) in bayarMakanOrang(a.id).slice().reverse()" :key="b.id">
+                  <div x-show="semua || i < 3" class="px-3 py-2 text-sm">
+                    <div class="flex items-center justify-between gap-2">
+                      <div>
+                        <span class="font-semibold text-stone-900" x-text="rp(b.jumlah)"></span>
+                        <span class="block text-[11px] text-stone-500" x-text="dmy(b.tanggal) + ' · ' + periodeBayar(b).hari + ' hari · ' + rp(periodeBayar(b).perHari) + '/hari'"></span>
+                      </div>
+                      <div class="flex gap-3">
+                        <button @click="openBayarMakanEdit(b)" class="text-indigo-700 text-xs font-semibold">Edit</button>
+                        <button @click="ask('Hapus pemberian ' + rp(b.jumlah) + '?', () => hapusBayarMakan(b.id))" class="text-rose-600 text-xs font-semibold">Hapus</button>
+                      </div>
+                    </div>
+                    <div x-show="bayarMakanForm.editId === b.id" x-cloak class="mt-2 grid grid-cols-5 sm:grid-cols-7 gap-1.5">
+                      <template x-for="d in periodeHariBayar(b)" :key="d">
+                        <button type="button" @click="toggleAbsen(d, b.anakId)" class="rounded-lg py-1 text-center border"
+                          :class="absenHari(d, b.anakId) ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-emerald-50 text-emerald-800 border-emerald-200'">
+                          <span class="block text-xs font-bold" x-text="dmy(d).slice(0, 5)"></span>
+                        </button>
+                      </template>
+                      <p x-show="periodeHariBayar(b).length === 0" class="col-span-5 text-xs text-stone-400 italic">Tidak ada hari dalam periode ini.</p>
+                    </div>
+                  </div>
+                </template>
+                <button x-show="bayarMakanOrang(a.id).length > 3" type="button" @click="semua = !semua"
+                  class="w-full py-2 text-xs font-semibold text-indigo-700"
+                  x-text="semua ? 'Tutup' : 'Lihat semua (' + bayarMakanOrang(a.id).length + ')'"></button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <p x-show="anakBuah.length === 0" class="text-sm text-stone-400 italic">Belum ada anak buah.</p>
+      </section>
+
       <!-- ===== KEUNTUNGAN ===== -->
       <section x-show="view === 'untung'" x-cloak class="space-y-6">
         <div class="card overflow-hidden">
@@ -858,7 +969,7 @@
 
     </main>
 <nav class="md:hidden fixed bottom-4 inset-x-4 z-40 mx-auto max-w-md grid grid-cols-6 gap-1 p-1.5 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/70 shadow-[0_12px_40px_-12px_rgba(28,25,23,.35)]">
-  <template x-for="m in menu" :key="m.id">
+  <template x-for="m in menu.filter(x => x.id !== 'makan')" :key="m.id">
     <button @click="go(m.id)" class="py-2 rounded-2xl flex flex-col items-center gap-0.5 text-[10px] font-semibold transition-all duration-200" :class="view === m.id || (m.id === 'pengirim' && view === 'setoran') ? 'bg-stone-900 text-white shadow-md' : 'text-stone-500'">
       <span class="text-base leading-none" x-text="m.icon"></span><span x-text="m.label.split(' ')[0]"></span>
     </button>
@@ -1150,6 +1261,9 @@ function app() {
     pilihTanggal: today(),
     riwayat: [],
     backupDue: false,
+    anakBuah: [], makanDays: [], absenMakan: [], bayarMakan: [],
+    makanMulai: '',
+    bayarMakanForm: { anakId: '', tanggal: today(), jumlah: '', editId: null },
     pembayaran: undefined,
     pickMonth: '',
     searchQuery: '',
@@ -1168,19 +1282,24 @@ function app() {
       { id: 'pengirim', icon: '📒', label: 'Nota', desc: 'Rekap & setoran pengirim' },
       { id: 'tagihan', icon: '📄', label: 'Bon', desc: 'Yang belum dibayar (Pengecer & Diluar)' },
       { id: 'untung', icon: '📊', label: 'Laba', desc: 'Per bulan & per hari' },
+      { id: 'makan', icon: '🍚', label: 'Uang Makan', desc: 'Anak buah & rekap kehadiran' },
       { id: 'nota', icon: '📝', label: 'Cetak Bon', desc: 'Cetak bon untuk tagihan' },
     ],
 
     init() {
       try {
         const s = JSON.parse(localStorage.getItem(KEY) || 'null');
-        if (s) Object.assign(this, { days: s.days || [], pengirim: s.pengirim || [], barang: s.barang || [], trx: s.trx || [], diluar: s.diluar || [], setoran: s.setoran || [], pembayaran: Array.isArray(s.pembayaran) ? s.pembayaran : undefined, riwayat: s.riwayat || [], currentDay: s.currentDay || this.currentDay });
+        if (s) Object.assign(this, { makanMulai: s.makanMulai || '', anakBuah: s.anakBuah || [], makanDays: s.makanDays || [], absenMakan: s.absenMakan || [], bayarMakan: s.bayarMakan || [], days: s.days || [], pengirim: s.pengirim || [], barang: s.barang || [], trx: s.trx || [], diluar: s.diluar || [], setoran: s.setoran || [], pembayaran: Array.isArray(s.pembayaran) ? s.pembayaran : undefined, riwayat: s.riwayat || [], currentDay: s.currentDay || this.currentDay });
       } catch (e) {}
+      { let s0 = null; try { s0 = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+        if (!s0 || s0.anakBuah === undefined) this.anakBuah = [{ id: 'ab1', nama: 'Rosi' }, { id: 'ab2', nama: 'Muhlis' }, { id: 'ab3', nama: 'Alul' }]; }
       this.days = [...new Set(this.days)];
       this.normalizeTrx();
       this.backupDue = this.cadanganPerlu();
       if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
-      this.$watch(() => JSON.stringify({ days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat }),
+      this.isiHariMakan();
+      this.$watch('currentDay', () => { if (this.view === 'jual') this.bukaHariMakan(); });
+      this.$watch(() => JSON.stringify({ days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, makanMulai: this.makanMulai }),
         v => { try { localStorage.setItem(KEY, v); } catch (e) {} });
       if (location.hash) { const h = location.hash.slice(1); if (this.menu.some(m => m.id === h)) this.view = h; }
     },
@@ -1315,7 +1434,7 @@ function app() {
         }, 150);
       });
     },
-    go(v) { this.view = v; if (v === 'nota' && this.nota.kepada) this.notaIsi(); window.scrollTo(0, 0); },
+    go(v) { this.view = v; this.isiHariMakan(); if (v === 'nota' && this.nota.kepada) this.notaIsi(); window.scrollTo(0, 0); },
     calBulan: '',
     calGeser(n) {
       const base = this.calBulan || this.currentDay.slice(0, 7);
@@ -1345,7 +1464,7 @@ function app() {
     setDay(d) { if (!d) return; if (!this.days.includes(d)) this.days.push(d); this.currentDay = d; },
     ask(msg, fn, label) { this.confirmBox = { open: true, msg, fn, label: label || 'Hapus' }; },
     pageKicker() { return { dash: 'Beranda', jual: 'Penjualan', pengirim: 'Pengirim', tagihan: 'Keuangan', untung: 'Laporan', nota: 'Dokumen' }[this.view] || ''; },
-    pageTitle() { return { dash: 'Dashboard', jual: 'Penjualan', pengirim: 'Nota', tagihan: 'Bon', untung: 'Laba', nota: 'Cetak Bon' }[this.view] || ''; },
+    pageTitle() { return { dash: 'Dashboard', jual: 'Penjualan', pengirim: 'Nota', tagihan: 'Bon', untung: 'Laba', nota: 'Cetak Bon', makan: 'Uang Makan' }[this.view] || ''; },
 
     // ===== format & util =====
     rp(n) { return 'Rp ' + Math.round(Number(n) || 0).toLocaleString('id-ID'); },
@@ -2032,13 +2151,17 @@ function app() {
         const modal = this.barang.filter(b => b.hari === d).reduce((s, b) => s + (Number(b.modal) || 0) * (parseFloat(b.qty) || 0), 0);
         const ongkos = this.pengirim.filter(p => p.hari === d && p.jenis !== 'Centengan').reduce((s, p) => s + (Number(p.ongkos) || 0), 0);
         const kurang = t.reduce((s, x) => s + this.sisaT(x), 0);
-        return { hari: d, jual, bayar, kurang, modal, ongkos, untung: jual - modal - ongkos };
+        const makan = this.bayarMakan.filter(b => b.tanggal === d).reduce((s, b) => s + (Number(b.jumlah) || 0), 0);
+        return { hari: d, jual, bayar, kurang, modal, ongkos, makan, untung: jual - modal - ongkos - makan };
       });
     },
     sumHari(f) { return this.hariDetail(this.bulanAktif()).reduce((s, h) => s + (h[f] || 0), 0); },
     bulanList() {
-      const ms = [...new Set(this.days.map(d => d.slice(0, 7)))].sort();
-      return ms.map(m => ({ bulan: m, hari: this.days.filter(d => d.startsWith(m)).length, untung: this.hariDetail(m).reduce((s, h) => s + h.untung, 0) }));
+      const ms = [...new Set([...this.days, ...this.bayarMakan.map(b => b.tanggal)].map(d => d.slice(0, 7)))].sort();
+      return ms.map(m => {
+        const luarHari = this.bayarMakan.filter(b => b.tanggal.startsWith(m) && !this.days.includes(b.tanggal)).reduce((s, b) => s + (Number(b.jumlah) || 0), 0);
+        return { bulan: m, hari: this.days.filter(d => d.startsWith(m)).length, untung: this.hariDetail(m).reduce((s, h) => s + h.untung, 0) - luarHari };
+      });
     },
     bulanAktif() { const l = this.bulanList(); if (this.pickMonth && l.some(b => b.bulan === this.pickMonth)) return this.pickMonth; return l.length ? l[l.length - 1].bulan : ''; },
 
@@ -2276,6 +2399,88 @@ function app() {
       this.modal.open = false;
     },
 
+    // ===== UANG MAKAN =====
+    bisaAbsen(h) { return !!h && h <= today(); },
+    isiHariMakan() {
+      if (!this.makanMulai) this.makanMulai = this.makanDays.length ? this.makanDays.slice().sort()[0] : today();
+      const fmt = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+      const akhir = today();
+      const d = new Date(this.makanMulai + 'T00:00:00');
+      for (let i = 0; i < 5000; i++) {
+        const t = fmt(d);
+        if (t > akhir) break;
+        if (!this.makanDays.includes(t)) this.makanDays.push(t);
+        d.setDate(d.getDate() + 1);
+      }
+    },
+    bukaHariMakan() { this.isiHariMakan(); },
+    dalamRentang(d) { return d <= today(); },
+    makanHariRentang() { return this.makanDays.filter(d => this.dalamRentang(d)); },
+    periodeHariBayar(b) {
+      const prev = this.bayarMakanOrang(b.anakId).filter(x => x.id !== b.id && x.tanggal < b.tanggal).slice(-1)[0];
+      const from = prev ? prev.tanggal : '';
+      return this.makanDays.filter(d => d > from && d <= b.tanggal).sort();
+    },
+    makanPeriode(id) {
+      const from = this.makanTerakhir(id);
+      return this.makanDays.filter(d => d > from && d <= today()).sort();
+    },
+    makanBelumHadir(id) { return this.makanPeriode(id).filter(d => !this.absenHari(d, id)).length; },
+    makanBelumTidak(id) { return this.makanPeriode(id).filter(d => this.absenHari(d, id)).length; },
+    makanTidakHadir(id) { return this.makanHariRentang().filter(d => this.absenHari(d, id)).length; },
+    makanTerakhir(id) { const l = this.bayarMakanOrang(id).slice(-1)[0]; return l ? l.tanggal : ''; },
+    absenHari(h, id) { return this.absenMakan.some(x => x.hari === h && x.anakId === id); },
+    toggleAbsen(h, id) {
+      if (!this.bisaAbsen(h)) return;
+      if (!this.makanDays.includes(h)) this.makanDays.push(h);
+      if (this.absenHari(h, id)) this.absenMakan = this.absenMakan.filter(x => !(x.hari === h && x.anakId === id));
+      else this.absenMakan.push({ id: uid(), hari: h, anakId: id });
+    },
+    hapusAnakBuah(id) {
+      this.anakBuah = this.anakBuah.filter(a => a.id !== id);
+      this.absenMakan = this.absenMakan.filter(x => x.anakId !== id);
+      this.bayarMakan = this.bayarMakan.filter(b => b.anakId !== id);
+    },
+    bayarMakanOrang(id) { return this.bayarMakan.filter(b => b.anakId === id).sort((x, y) => (x.tanggal || '').localeCompare(y.tanggal || '')); },
+    makanDibayar(id) { return this.bayarMakanOrang(id).reduce((s, b) => s + (Number(b.jumlah) || 0), 0); },
+    makanHadirTotal(id) { return this.makanHariRentang().filter(d => !this.absenHari(d, id)).length; },
+    makanBelumHari(id) {
+      const last = this.bayarMakanOrang(id).slice(-1)[0];
+      const from = last ? last.tanggal : '';
+      return this.makanDays.filter(d => d > from && !this.absenHari(d, id)).length;
+    },
+    periodeBayar(b) {
+      const prev = this.bayarMakanOrang(b.anakId).filter(x => x.id !== b.id && x.tanggal < b.tanggal).slice(-1)[0];
+      const from = prev ? prev.tanggal : '';
+      const hari = this.makanDays.filter(d => d > from && d <= b.tanggal && !this.absenHari(d, b.anakId)).length;
+      return { hari, perHari: hari ? Math.round((Number(b.jumlah) || 0) / hari) : 0 };
+    },
+    previewBayarMakan() {
+      const f = this.bayarMakanForm;
+      if (!f.anakId || !f.tanggal) return null;
+      const prev = this.bayarMakanOrang(f.anakId).filter(x => x.id !== f.editId && x.tanggal < f.tanggal).slice(-1)[0];
+      const from = prev ? prev.tanggal : '';
+      const hari = this.makanDays.filter(d => d > from && d <= f.tanggal && !this.absenHari(d, f.anakId)).length;
+      const j = this.dg(f.jumlah);
+      return { hari, perHari: hari && j ? Math.round(j / hari) : 0, dari: from };
+    },
+    openBayarMakan(a) { this.bayarMakanForm = { anakId: a.id, tanggal: today(), jumlah: '', editId: null }; },
+    openBayarMakanEdit(b) { this.bayarMakanForm = { anakId: b.anakId, tanggal: b.tanggal, jumlah: String(Number(b.jumlah) || ''), editId: b.id }; },
+    resetBayarMakan() { this.bayarMakanForm = { anakId: '', tanggal: today(), jumlah: '', editId: null }; },
+    simpanBayarMakan() {
+      const f = this.bayarMakanForm;
+      const j = this.dg(f.jumlah);
+      if (!f.anakId || !f.tanggal || !j) return;
+      if (f.editId) {
+        const b = this.bayarMakan.find(x => x.id === f.editId);
+        if (b) Object.assign(b, { anakId: f.anakId, tanggal: f.tanggal, jumlah: j });
+      } else {
+        this.bayarMakan.push({ id: uid(), anakId: f.anakId, tanggal: f.tanggal, jumlah: j });
+      }
+      this.resetBayarMakan();
+    },
+    hapusBayarMakan(id) { this.bayarMakan = this.bayarMakan.filter(b => b.id !== id); },
+
     // ===== cadangan =====
     namaFileCadangan() {
       const d = new Date(), p = n => String(n).padStart(2, '0');
@@ -2292,7 +2497,7 @@ function app() {
       return 'Cadangan terakhir: ' + new Date(t).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + '. Berikutnya dalam 3 hari.';
     },
     exportJSON() {
-      const blob = new Blob([JSON.stringify({ days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat }, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify({ makanMulai: this.makanMulai, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat }, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = this.namaFileCadangan();
@@ -2305,8 +2510,29 @@ function app() {
       if (!f) return;
       const r = new FileReader();
       r.onload = () => {
-        try {
-          const d = JSON.parse(r.result);
+        let d;
+        try { d = JSON.parse(r.result); } catch (err) { alert('File cadangan tidak bisa dibaca.'); e.target.value = ''; return; }
+        if (!d || typeof d !== 'object') { alert('File cadangan tidak bisa dibaca.'); e.target.value = ''; return; }
+        this.ask(this.ringkasanCadangan(d), () => this.terapkanCadangan(d, e), 'Muat');
+      };
+      r.readAsText(f);
+    },
+    ringkasanCadangan(d) {
+      const n = x => Array.isArray(x) ? x.length : 0;
+      const baru = !!(d.pengirim || d.trx);
+      const bagian = [
+        n(d.days) + ' hari',
+        (baru ? n(d.pengirim) : n(d.pengirimList)) + ' pengirim/centengan',
+        (baru ? n(d.barang) : n(d.barangMasuk)) + ' barang',
+        (baru ? n(d.trx) : n(d.transactions)) + ' transaksi',
+        n(d.setoran) + ' setoran',
+      ];
+      if (n(d.anakBuah)) bagian.push(n(d.anakBuah) + ' anak buah');
+      const tgl = d.currentDay ? ' Tanggal aktif: ' + d.currentDay + '.' : '';
+      return 'Data di aplikasi akan diganti dengan isi file ini: ' + bagian.join(' · ') + '.' + tgl + ' Lanjutkan?';
+    },
+    terapkanCadangan(d, e) {
+      try {
           // format baru
           if (d.pengirim || d.trx) {
             this.days = d.days || []; this.pengirim = d.pengirim || []; this.barang = d.barang || []; this.trx = d.trx || []; this.diluar = d.diluar || []; this.setoran = d.setoran || []; this.pembayaran = Array.isArray(d.pembayaran) ? d.pembayaran : undefined; this.riwayat = d.riwayat || [];
@@ -2321,13 +2547,16 @@ function app() {
             this.pembayaran = undefined;
           }
           if (d.currentDay) this.currentDay = d.currentDay;
+          if (d.anakBuah) this.anakBuah = d.anakBuah;
+          if (d.makanDays) this.makanDays = d.makanDays;
+          if (d.absenMakan) this.absenMakan = d.absenMakan;
+          if (d.bayarMakan) this.bayarMakan = d.bayarMakan;
+          if (d.makanMulai) this.makanMulai = d.makanMulai;
           this.normalizeTrx();
           if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
           alert('Cadangan berhasil dimuat.');
         } catch (err) { alert('File cadangan tidak bisa dibaca.'); }
         e.target.value = '';
-      };
-      r.readAsText(f);
     },
   };
 }
