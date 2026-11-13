@@ -165,6 +165,7 @@
             <p class="font-bold text-slate-900">Cadangan data</p>
             <p class="text-xs" :class="backupDue ? 'text-rose-600 font-semibold' : 'text-slate-500'" x-text="backupMsg()"></p>
             <p class="text-[11px] text-stone-400" x-show="storageInfo" x-text="storageInfo"></p>
+            <p class="text-[10px] text-stone-300">Versi aplikasi: cloud-login-2</p>
             <div class="mt-2 text-xs">
               <button x-show="!cloudUser" @click="loginCloud()" class="btn btn-navy !py-1 !px-2.5 !text-xs">Masuk dengan Google (simpan ke cloud)</button>
               <p x-show="!cloudUser && cloudStatus" x-cloak class="mt-1 text-[11px] text-rose-600 font-semibold" x-text="cloudStatus"></p>
