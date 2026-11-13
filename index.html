@@ -70,7 +70,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b2f5b">
 <link rel="apple-touch-icon" href="icon-192.png">
-</head><body class="antialiased" x-data="app()" x-init="init()">
+</head><body class="antialiased" x-data="app()">
 <div class="min-h-screen pb-24 md:pb-12">
 <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-stone-200">
   <div class="max-w-6xl mx-auto px-4 lg:px-10 h-14 flex items-center justify-between gap-3">
@@ -172,7 +172,7 @@
               <div x-show="cloudUser" x-cloak class="space-y-1">
                 <p class="text-stone-600">Cloud: <span class="font-semibold" x-text="cloudUser"></span></p>
                 <p class="text-stone-400" x-text="cloudStatus"></p>
-                <button @click="logoutCloud()" class="text-rose-600 font-semibold">Keluar</button>
+                <button @click="ask('Yakin ingin keluar dari akun Google Cloud? Sinkronisasi otomatis akan berhenti sampai Anda masuk kembali.', () => logoutCloud(), 'Keluar')" class="text-rose-600 font-semibold">Keluar</button>
               </div>
             </div>
           </div>
@@ -1067,11 +1067,23 @@
 <!-- ===== POPUP KONFIRMASI ===== -->
 <div x-show="confirmBox.open" x-cloak class="fixed inset-0 z-[60] bg-slate-900/50 flex items-center justify-center p-4">
   <div class="card p-6 max-w-sm w-full space-y-4">
-    <h3 class="font-bold text-slate-900 text-lg">Konfirmasi hapus</h3>
+    <h3 class="font-bold text-slate-900 text-lg" x-text="confirmBox.label === 'Keluar' ? 'Konfirmasi keluar' : 'Konfirmasi'"></h3>
     <p class="text-sm text-slate-600" x-text="confirmBox.msg"></p>
     <div class="flex justify-end gap-2">
       <button @click="confirmBox.open = false" class="btn btn-light">Batal</button>
       <button @click="confirmBox.open = false; confirmBox.fn && confirmBox.fn()" class="btn bg-rose-600 hover:bg-rose-500 text-white" x-text="confirmBox.label || 'Hapus'"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== POPUP BERHASIL LOGIN ===== -->
+<div x-show="loginPopup.open" x-cloak class="fixed inset-0 z-[70] bg-slate-900/50 flex items-center justify-center p-4">
+  <div class="card p-6 max-w-sm w-full space-y-4 text-center">
+    <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto text-2xl font-bold">✓</div>
+    <h3 class="font-bold text-slate-900 text-lg">Berhasil Masuk</h3>
+    <p class="text-sm text-slate-600" x-text="loginPopup.msg"></p>
+    <div class="flex justify-center pt-1">
+      <button @click="loginPopup.open = false" class="btn btn-navy w-full">Oke</button>
     </div>
   </div>
 </div>
@@ -1382,6 +1394,9 @@ function app() {
     siapSimpan: false,
     cloudUser: null,
     cloudStatus: '',
+    loginPopup: { open: false, msg: '' },
+    _wasLoggedIn: false,
+    _manualLogin: false,
     storageInfo: '',
     bayarMakanForm: { anakId: '', tanggal: today(), jumlah: '', editId: null },
     pembayaran: undefined,
@@ -1407,23 +1422,22 @@ function app() {
       { id: 'nota', icon: '📝', label: 'Cetak Bon', desc: 'Cetak bon untuk tagihan' },
     ],
 
+    _inited: false,
+    _savingWatch: false,
     init() {
-      try {
-        const s = JSON.parse(localStorage.getItem(KEY) || 'null');
-        if (s) Object.assign(this, { makanMulai: s.makanMulai || '', anakBuah: s.anakBuah || [], makanDays: s.makanDays || [], absenMakan: s.absenMakan || [], bayarMakan: s.bayarMakan || [], days: s.days || [], pengirim: s.pengirim || [], barang: s.barang || [], trx: s.trx || [], diluar: s.diluar || [], setoran: s.setoran || [], pembayaran: Array.isArray(s.pembayaran) ? s.pembayaran : undefined, riwayat: s.riwayat || [], currentDay: s.currentDay || this.currentDay });
-      } catch (e) {}
-      { let s0 = null; try { s0 = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
-        if (!s0 || s0.anakBuah === undefined) this.anakBuah = [{ id: 'ab1', nama: 'Rosi' }, { id: 'ab2', nama: 'Muhlis' }, { id: 'ab3', nama: 'Alul' }]; }
-      this.days = [...new Set(this.days)];
-      this.normalizeTrx();
+      if (this._inited) return;
+      this._inited = true;
+      this.anakBuah = [{ id: 'ab1', nama: 'Rosi' }, { id: 'ab2', nama: 'Muhlis' }, { id: 'ab3', nama: 'Alul' }];
       this.backupDue = this.cadanganPerlu();
-      if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
-      this.isiHariMakan();
       this.$watch('currentDay', () => { if (this.view === 'jual') this.bukaHariMakan(); });
-      this.$watch(() => JSON.stringify({ days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, makanMulai: this.makanMulai }),
-        v => { if (!this.siapSimpan) return; localStorage.setItem('ats_local_saved', String(Date.now())); dbSet(KEY, v).catch(() => { try { localStorage.setItem(KEY, v); } catch (e) {} }); this.dorongCloudNanti(); });
-      this.initDB();
-      this.initCloud();
+      this.$watch(() => this.snapshotState(),
+        v => {
+          if (!this.siapSimpan || this._savingWatch) return;
+          localStorage.setItem('ats_local_saved', String(Date.now()));
+          dbSet(KEY, v).catch(() => { try { localStorage.setItem(KEY, v); } catch (e) {} });
+          this.dorongCloudNanti();
+        });
+      this.initDB().then(() => this.initCloud());
       if (location.hash) { const h = location.hash.slice(1); if (this.menu.some(m => m.id === h)) this.view = h; }
     },
 
@@ -2565,14 +2579,9 @@ function app() {
     bisaAbsen(h) { return !!h && h <= today(); },
     isiHariMakan() {
       if (!this.makanMulai) this.makanMulai = this.makanDays.length ? this.makanDays.slice().sort()[0] : today();
-      const fmt = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
-      const akhir = today();
-      const d = new Date(this.makanMulai + 'T00:00:00');
-      for (let i = 0; i < 5000; i++) {
-        const t = fmt(d);
-        if (t > akhir) break;
-        if (!this.makanDays.includes(t)) this.makanDays.push(t);
-        d.setDate(d.getDate() + 1);
+      const t = today();
+      if (this.makanMulai <= t && !this.makanDays.includes(t)) {
+        this.makanDays.push(t);
       }
     },
     bukaHariMakan() { this.isiHariMakan(); },
@@ -2653,26 +2662,68 @@ function app() {
       return !t || (Date.now() - t) >= 3 * 24 * 60 * 60 * 1000;
     },
     terapkanState(s) {
-      if (s) Object.assign(this, { makanMulai: s.makanMulai || '', anakBuah: s.anakBuah || [], makanDays: s.makanDays || [], absenMakan: s.absenMakan || [], bayarMakan: s.bayarMakan || [], days: s.days || [], pengirim: s.pengirim || [], barang: s.barang || [], trx: s.trx || [], diluar: s.diluar || [], setoran: s.setoran || [], pembayaran: Array.isArray(s.pembayaran) ? s.pembayaran : undefined, riwayat: s.riwayat || [], currentDay: s.currentDay || this.currentDay });
-      this.days = [...new Set(this.days)];
-      this.normalizeTrx();
-      this.isiHariMakan();
+      const prevSimpan = this.siapSimpan;
+      this.siapSimpan = false;
+      try {
+        if (s) {
+          const anakBuahVal = s.anakBuah === undefined
+            ? [{ id: 'ab1', nama: 'Rosi' }, { id: 'ab2', nama: 'Muhlis' }, { id: 'ab3', nama: 'Alul' }]
+            : (Array.isArray(s.anakBuah) ? s.anakBuah : []);
+          Object.assign(this, {
+            makanMulai: s.makanMulai || '',
+            anakBuah: anakBuahVal,
+            makanDays: Array.isArray(s.makanDays) ? [...new Set(s.makanDays)] : [],
+            absenMakan: Array.isArray(s.absenMakan) ? s.absenMakan : [],
+            bayarMakan: Array.isArray(s.bayarMakan) ? s.bayarMakan : [],
+            days: Array.isArray(s.days) ? [...new Set(s.days)] : [],
+            pengirim: Array.isArray(s.pengirim) ? s.pengirim : [],
+            barang: Array.isArray(s.barang) ? s.barang : [],
+            trx: Array.isArray(s.trx) ? s.trx : [],
+            diluar: Array.isArray(s.diluar) ? s.diluar : [],
+            setoran: Array.isArray(s.setoran) ? s.setoran : [],
+            pembayaran: Array.isArray(s.pembayaran) ? s.pembayaran : undefined,
+            riwayat: Array.isArray(s.riwayat) ? s.riwayat : [],
+            currentDay: s.currentDay || this.currentDay
+          });
+        }
+        this.days = [...new Set(this.days)];
+        this.normalizeTrx();
+        this.isiHariMakan();
+      } finally {
+        this.siapSimpan = prevSimpan;
+      }
     },
     snapshotState() { return JSON.stringify({ days: this.days, currentDay: this.currentDay, pengirim: this.pengirim, barang: this.barang, trx: this.trx, diluar: this.diluar, setoran: this.setoran, pembayaran: this.pembayaran, riwayat: this.riwayat, anakBuah: this.anakBuah, makanDays: this.makanDays, absenMakan: this.absenMakan, bayarMakan: this.bayarMakan, makanMulai: this.makanMulai }); },
     initCloud() {
       if (!fbAuth) return;
-      fbAuth.getRedirectResult().then(r => { if (r && r.user) this.cloudStatus = 'Berhasil masuk: ' + (r.user.email || ''); }).catch(e => { this.cloudStatus = 'Login gagal: ' + (e.code || e.message || 'tidak diketahui'); });
+      this._wasLoggedIn = !!fbAuth.currentUser;
+      fbAuth.getRedirectResult().then(r => {
+        if (r && r.user) {
+          this.cloudStatus = 'Berhasil masuk: ' + (r.user.email || '');
+          this.loginPopup = { open: true, msg: 'Selamat datang, ' + (r.user.email || 'Akun Google') + '. Data siap disinkronkan ke cloud.' };
+        }
+      }).catch(e => {
+        this.cloudStatus = 'Login gagal: ' + (e.code || e.message || 'tidak diketahui');
+      });
       fbAuth.onAuthStateChanged(async u => {
+        const baruMasuk = u && !this._wasLoggedIn && this._manualLogin;
+        this._wasLoggedIn = !!u;
+        this._manualLogin = false;
         this.cloudUser = u ? (u.email || 'akun Google') : null;
         if (u) {
+          if (baruMasuk) {
+            this.loginPopup = { open: true, msg: 'Berhasil masuk sebagai ' + (u.email || 'Akun Google') + '.' };
+          }
           try { await this.sinkronCloud(); } catch (e) { this.cloudStatus = 'Gagal sinkron: periksa koneksi internet'; }
         }
       });
     },
     loginCloud() {
       if (!fbAuth) { this.cloudStatus = 'Firebase belum termuat, periksa koneksi'; return; }
+      this._manualLogin = true;
       this.cloudStatus = 'Membuka jendela login Google...';
       fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => {
+        this._manualLogin = false;
         const pesan = e.code === 'auth/popup-blocked' ? ' (izinkan pop-up untuk situs ini di Chrome)' : '';
         this.cloudStatus = 'Login gagal: ' + (e.code || e.message || 'tidak diketahui') + pesan;
       });
@@ -2684,9 +2735,10 @@ function app() {
       const lokal = Number(localStorage.getItem('ats_local_saved') || 0);
       if (snap.exists) {
         const cloud = snap.data();
-        if ((Number(cloud.updatedAt) || 0) > lokal) {
+        if ((Number(cloud.updatedAt) || 0) > lokal && cloud.json) {
           this.terapkanState(JSON.parse(cloud.json));
-          await dbSet(KEY, cloud.json);
+          const normalizedJson = this.snapshotState();
+          await dbSet(KEY, normalizedJson);
           localStorage.setItem('ats_local_saved', String(cloud.updatedAt));
           this.cloudStatus = 'Data dimuat dari cloud';
           return;
@@ -2696,22 +2748,31 @@ function app() {
     },
     async dorongCloud() {
       if (!fbDb || !this.cloudUser) return;
-      await fbDb.collection('ats').doc('data').set({ json: this.snapshotState(), updatedAt: Date.now() });
+      const now = Date.now();
+      await fbDb.collection('ats').doc('data').set({ json: this.snapshotState(), updatedAt: now });
+      localStorage.setItem('ats_local_saved', String(now));
       this.cloudStatus = 'Tersimpan ke cloud · ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     },
     dorongCloudNanti() {
-      if (!this.cloudUser || !fbDb) return;
+      if (!this.cloudUser || !fbDb || !this.siapSimpan) return;
       clearTimeout(this._cloudTimer);
       this._cloudTimer = setTimeout(() => {
         this.dorongCloud().catch(() => { this.cloudStatus = 'Belum tersimpan ke cloud, akan dicoba lagi'; });
       }, 2000);
     },
     async initDB() {
+      this.siapSimpan = false;
       try {
-        const raw = await dbGet(KEY);
-        if (raw) this.terapkanState(JSON.parse(raw));
-        else await dbSet(KEY, this.snapshotState());
+        const raw = await dbGet(KEY) || localStorage.getItem(KEY);
+        if (raw) {
+          this.terapkanState(JSON.parse(raw));
+        } else {
+          if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
+          this.isiHariMakan();
+          await dbSet(KEY, this.snapshotState());
+        }
       } catch (e) {}
+      if (!this.days.includes(this.currentDay)) this.days.push(this.currentDay);
       this.siapSimpan = true;
       this.updateStorageInfo();
     },
