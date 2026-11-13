@@ -1,6 +1,7 @@
 {
-  "name": "ATS Tsurayya",
-  "short_name": "ATS",
+  "name": "ATS-TSURAYYA",
+  "short_name": "ATS-TSURAYYA",
+  "description": "Aplikasi ATS Tsurayya",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -12,13 +13,25 @@
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
