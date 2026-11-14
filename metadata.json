@@ -1,0 +1,6 @@
+{
+  "name": "Ats-Tsurayya",
+  "description": "Aplikasi catatan dagang hasil bumi ATS-TSURAYYA untuk pencatatan penjualan, setoran pengirim, bon tagihan, laba, dan uang makan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
