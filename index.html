@@ -1494,6 +1494,7 @@
 </div>
 
 <div x-show="toast.open" x-cloak class="fixed left-1/2 -translate-x-1/2 bottom-28 z-[80] bg-stone-900 text-white text-xs font-semibold rounded-full px-4 py-2 shadow-lg whitespace-nowrap" x-text="toast.msg"></div>
+<pre x-show="dbg" x-cloak class="fixed left-2 top-2 z-[90] max-w-[90vw] bg-black/80 text-green-300 text-[10px] p-2 rounded whitespace-pre-wrap" x-text="dbg"></pre>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -1596,6 +1597,7 @@ function app() {
     modal: { open: false, type: '', title: '', f: {}, id: null, parent: null },
     confirmBox: { open: false, msg: '', fn: null },
     toast: { open: false, msg: '' },
+    dbg: '',
 
     menu: [
       { id: 'dash', ikon: 'ri-dashboard-fill', label: 'Dashboard', desc: 'Ringkasan & menu utama' },
@@ -1830,8 +1832,10 @@ function app() {
       });
     },
     pindahView(v) { if (v !== this.view) history.replaceState({ v: v }, '', '#' + v); this.view = v; },
+    debugCatat(t) { this.dbg = (this.dbg ? this.dbg + '\n' : '') + t.slice(0, 400); clearTimeout(this._dbgT); this._dbgT = setTimeout(() => { this.dbg = ''; }, 30000); },
     showToast(msg) { this.toast = { open: true, msg: msg }; clearTimeout(this._toastT); this._toastT = setTimeout(() => { this.toast.open = false; }, 2000); },
     tanganiKembali(e) {
+      this.debugCatat('popstate | state=' + JSON.stringify(e.state) + ' | view=' + this.view + ' | history.length=' + history.length + ' | kembaliAt=' + (this._kembaliAt ? 'ada' : 'kosong'));
       if (this.modal.open || this.searchModal.open || this.confirmBox.open || this.loginPopup.open) {
         this.modal.open = false; this.searchModal.open = false; this.confirmBox.open = false; this.loginPopup.open = false;
         history.pushState({ v: this.view }, '', '#' + this.view);
