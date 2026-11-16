@@ -1493,6 +1493,7 @@
   </div>
 </div>
 
+<div x-show="toast.open" x-cloak class="fixed left-1/2 -translate-x-1/2 bottom-28 z-[80] bg-stone-900 text-white text-xs font-semibold rounded-full px-4 py-2 shadow-lg whitespace-nowrap" x-text="toast.msg"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -1594,6 +1595,7 @@ function app() {
     nota: { kepada: '', rows: [] },
     modal: { open: false, type: '', title: '', f: {}, id: null, parent: null },
     confirmBox: { open: false, msg: '', fn: null },
+    toast: { open: false, msg: '' },
 
     menu: [
       { id: 'dash', ikon: 'ri-dashboard-fill', label: 'Dashboard', desc: 'Ringkasan & menu utama' },
@@ -1638,6 +1640,9 @@ function app() {
         });
       this.initDB().then(ok => { if (ok) this.initCloud(); });
       if (location.hash) { const h = location.hash.slice(1); if (this.menu.some(m => m.id === h)) this.view = h; }
+      history.replaceState({ g: 1 }, '', location.pathname + location.search);
+      history.pushState({ v: this.view }, '', '#' + this.view);
+      window.addEventListener('popstate', e => this.tanganiKembali(e));
     },
 
     async simpanLokalTertunda() {
@@ -1809,7 +1814,7 @@ function app() {
 
     bukaAndScroll(hari, viewTarget, targetId) {
       this.setDay(hari);
-      this.view = viewTarget;
+      this.pindahView(viewTarget);
       this.searchModal.open = false;
       this.$nextTick(() => {
         setTimeout(() => {
@@ -1824,7 +1829,24 @@ function app() {
         }, 150);
       });
     },
-    go(v) { if (navigator.vibrate) navigator.vibrate(8); this.view = v; this.isiHariMakan(); if (v === 'nota' && this.nota.kepada) this.notaIsi(); window.scrollTo(0, 0); },
+    pindahView(v) { if (v !== this.view) history.pushState({ v: v }, '', '#' + v); this.view = v; },
+    showToast(msg) { this.toast = { open: true, msg: msg }; clearTimeout(this._toastT); this._toastT = setTimeout(() => { this.toast.open = false; }, 2000); },
+    tanganiKembali(e) {
+      if (this.modal.open || this.searchModal.open || this.confirmBox.open || this.loginPopup.open) {
+        this.modal.open = false; this.searchModal.open = false; this.confirmBox.open = false; this.loginPopup.open = false;
+        history.pushState({ v: this.view }, '', '#' + this.view);
+        return;
+      }
+      const st = e.state || {};
+      if (st.v) { this.view = st.v; window.scrollTo(0, 0); return; }
+      const now = Date.now();
+      if (this._kembaliAt && now - this._kembaliAt < 2000) { history.back(); return; }
+      this._kembaliAt = now;
+      this.showToast('Tekan sekali lagi untuk keluar');
+      history.pushState({ v: 'dash' }, '', '#dash');
+      this.view = 'dash';
+    },
+    go(v) { if (navigator.vibrate) navigator.vibrate(8); this.pindahView(v); this.isiHariMakan(); if (v === 'nota' && this.nota.kepada) this.notaIsi(); window.scrollTo(0, 0); },
     calBulan: '',
     calGeser(n) {
       const base = this.calBulan || this.currentDay.slice(0, 7);
