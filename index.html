@@ -1829,7 +1829,7 @@ function app() {
         }, 150);
       });
     },
-    pindahView(v) { if (v !== this.view) history.pushState({ v: v }, '', '#' + v); this.view = v; },
+    pindahView(v) { if (v !== this.view) history.replaceState({ v: v }, '', '#' + v); this.view = v; },
     showToast(msg) { this.toast = { open: true, msg: msg }; clearTimeout(this._toastT); this._toastT = setTimeout(() => { this.toast.open = false; }, 2000); },
     tanganiKembali(e) {
       if (this.modal.open || this.searchModal.open || this.confirmBox.open || this.loginPopup.open) {
@@ -1838,13 +1838,20 @@ function app() {
         return;
       }
       const st = e.state || {};
-      if (st.v) { this.view = st.v; window.scrollTo(0, 0); return; }
+      if (!st.g) return;
+      // Tombol kembali dari menu mana pun langsung ke Dashboard
+      if (this.view !== 'dash') {
+        this.view = 'dash';
+        window.scrollTo(0, 0);
+        history.pushState({ v: 'dash' }, '', '#dash');
+        return;
+      }
+      // Di Dashboard: tekan dua kali dalam 2 detik untuk keluar
       const now = Date.now();
       if (this._kembaliAt && now - this._kembaliAt < 2000) { history.back(); return; }
       this._kembaliAt = now;
       this.showToast('Tekan sekali lagi untuk keluar');
       history.pushState({ v: 'dash' }, '', '#dash');
-      this.view = 'dash';
     },
     go(v) { if (navigator.vibrate) navigator.vibrate(8); this.pindahView(v); this.isiHariMakan(); if (v === 'nota' && this.nota.kepada) this.notaIsi(); window.scrollTo(0, 0); },
     calBulan: '',
