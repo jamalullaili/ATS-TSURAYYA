@@ -72,6 +72,49 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b2f5b">
 <link rel="apple-touch-icon" href="icon-192.png">
+<style id="tema-h">
+  :root { --navy: #0b2f5b; }
+  body { background: #eef3fa !important; color: #0b2f5b !important; }
+  header { background: rgba(255,255,255,.8) !important; border-bottom: 1px solid rgba(11,47,91,.08) !important; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  .card { background: #fff !important; border: 1px solid rgba(11,47,91,.08) !important; border-radius: 18px !important; box-shadow: 0 1px 2px rgba(11,47,91,.05) !important; }
+  .btn { transition: transform .15s ease, background-color .2s ease, box-shadow .2s ease; }
+  .btn:active { transform: scale(.96); }
+  .btn-navy { background: #0b2f5b !important; color: #fff !important; border: 0 !important; }
+  .btn-navy:hover { background: #134080 !important; }
+  .btn-light { background: #fff !important; color: #0b2f5b !important; border: 1px solid rgba(11,47,91,.18) !important; }
+  .btn-soft { background: #e6eef9 !important; color: #0b2f5b !important; border: 0 !important; }
+  .bg-stone-900, .bg-\[\#0b2f5b\], .bg-gradient-to-r { background-color: #0b2f5b !important; background-image: none !important; color: #fff; }
+  .text-stone-900, .text-stone-800, main .text-slate-900, main .text-slate-800, main .text-slate-700 { color: #0b2f5b !important; }
+  main .text-slate-500, main .text-slate-600, .text-stone-500, .text-stone-600 { color: #5a6b85 !important; }
+  main .bg-slate-50, main .bg-slate-100, .bg-stone-100 { background: #f3f6fb !important; }
+  main .border-slate-200, main .border-slate-100 { border-color: rgba(11,47,91,.08) !important; }
+  .inp { border: 1px solid rgba(11,47,91,.18) !important; border-radius: 12px !important; color: #0b2f5b !important; }
+  .inp:focus { box-shadow: 0 0 0 3px rgba(11,47,91,.15) !important; border-color: #0b2f5b !important; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+  main > section { animation: rise .5s cubic-bezier(.2,.8,.2,1) backwards; }
+  main > section > *:nth-child(2) { animation: rise .55s .05s cubic-bezier(.2,.8,.2,1) backwards; }
+  main > section > *:nth-child(3) { animation: rise .55s .10s cubic-bezier(.2,.8,.2,1) backwards; }
+  main > section > *:nth-child(4) { animation: rise .55s .15s cubic-bezier(.2,.8,.2,1) backwards; }
+  main > section > *:nth-child(n+5) { animation: rise .55s .2s cubic-bezier(.2,.8,.2,1) backwards; }
+  .card { transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease; }
+  @media (hover: hover) { .card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px -12px rgba(11,47,91,.28) !important; } }
+
+  .navkaca { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); padding: 6px; border-radius: 30px; background: rgba(255,255,255,.55); backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%); border: 1px solid rgba(255,255,255,.8); box-shadow: 0 10px 30px -8px rgba(11,47,91,.25), inset 0 1px 0 rgba(255,255,255,.6); }
+  .navpil { position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 6); border-radius: 24px; background: rgba(11,47,91,.12); transition: transform .55s cubic-bezier(.34,1.56,.64,1); }
+  .navitem { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; font-size: 10px; color: #0b2f5b; opacity: .6; background: none; border: 0; cursor: pointer; transition: opacity .3s ease, transform .2s ease; }
+  .navitem.aktif { opacity: 1; font-weight: 600; }
+  .navitem:active { transform: scale(.88); }
+  .navikon { font-size: 18px; line-height: 1; transition: transform .45s cubic-bezier(.34,1.56,.64,1); }
+  .navitem.aktif .navikon { transform: translateY(-2px) scale(1.15); }
+
+  main.ganti-hari > section { animation: geserHari .38s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes geserHari { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
 </head><body class="antialiased" x-data="app()">
 <div class="min-h-screen pb-24 md:pb-12">
 <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-stone-200">
@@ -202,7 +245,7 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <template x-for="m in menu.filter(x => x.id !== 'dash')" :key="m.id">
                 <button @click="go(m.id)" class="text-left rounded-2xl border border-slate-200 hover:border-[#0b2f5b] hover:shadow-md p-4 transition">
-                  <span class="text-2xl" x-text="m.icon"></span>
+                  <i class="text-2xl" :class="m.ikon" aria-hidden="true"></i>
                   <p class="font-bold text-slate-900 mt-2" x-text="m.label"></p>
                   <p class="text-xs text-slate-500 mt-0.5" x-text="m.desc"></p>
                 </button>
@@ -964,12 +1007,16 @@
       </section>
 
     </main>
-<nav class="md:hidden fixed bottom-4 inset-x-4 z-40 mx-auto max-w-md grid grid-cols-6 gap-1 p-1.5 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/70 shadow-[0_12px_40px_-12px_rgba(28,25,23,.35)]">
-  <template x-for="m in menu.filter(x => x.id !== 'makan')" :key="m.id">
-    <button @click="go(m.id)" class="py-2 rounded-2xl flex flex-col items-center gap-0.5 text-[10px] font-semibold transition-all duration-200" :class="view === m.id || (m.id === 'pengirim' && view === 'setoran') ? 'bg-stone-900 text-white shadow-md' : 'text-stone-500'">
-      <span class="text-base leading-none" x-text="m.icon"></span><span x-text="m.label.split(' ')[0]"></span>
-    </button>
-  </template>
+<nav class="md:hidden fixed bottom-4 inset-x-4 z-40 mx-auto max-w-md">
+  <div class="navkaca">
+    <span class="navpil" :style="{ transform: 'translateX(' + (idxNav() * 100) + '%)' }"></span>
+    <template x-for="m in menu.filter(x => x.id !== 'makan')" :key="m.id">
+      <button @click="go(m.id)" class="navitem" :class="(view === m.id || (m.id === 'pengirim' && view === 'setoran')) ? 'aktif' : ''">
+        <i class="navikon" :class="m.ikon" aria-hidden="true"></i>
+        <span x-text="m.label.split(' ')[0]"></span>
+      </button>
+    </template>
+  </div>
 </nav>
 </div>
 
@@ -1560,13 +1607,13 @@ function app() {
     confirmBox: { open: false, msg: '', fn: null },
 
     menu: [
-      { id: 'dash', icon: '▦', label: 'Dashboard', desc: 'Ringkasan & menu utama' },
-      { id: 'jual', icon: '🛒', label: 'Penjualan', desc: 'Catatan barang & pengecer' },
-      { id: 'pengirim', icon: '📒', label: 'Nota', desc: 'Rekap & setoran pengirim' },
-      { id: 'untung', icon: '📊', label: 'Laba', desc: 'Per bulan & per hari' },
-      { id: 'tagihan', icon: '📄', label: 'Bon', desc: 'Yang belum dibayar (Pengecer & Diluar)' },
-      { id: 'makan', icon: '💵', label: 'Uang Makan', desc: 'Anak buah & rekap kehadiran' },
-      { id: 'nota', icon: '📝', label: 'Cetak Bon', desc: 'Cetak bon untuk tagihan' },
+      { id: 'dash', ikon: 'ri-dashboard-fill', label: 'Dashboard', desc: 'Ringkasan & menu utama' },
+      { id: 'jual', ikon: 'ri-shopping-cart-2-fill', label: 'Penjualan', desc: 'Catatan barang & pengecer' },
+      { id: 'pengirim', ikon: 'ri-file-edit-fill', label: 'Nota', desc: 'Rekap & setoran pengirim' },
+      { id: 'untung', ikon: 'ph-fill ph-chart-line-up', label: 'Laba', desc: 'Per bulan & per hari' },
+      { id: 'tagihan', ikon: 'ph-fill ph-receipt', label: 'Bon', desc: 'Yang belum dibayar (Pengecer & Diluar)' },
+      { id: 'makan', ikon: 'ri-hand-coin-fill', label: 'Uang Makan', desc: 'Anak buah & rekap kehadiran' },
+      { id: 'nota', ikon: 'ri-printer-fill', label: 'Cetak Bon', desc: 'Cetak bon untuk tagihan' },
     ],
 
     _inited: false,
@@ -1588,6 +1635,11 @@ function app() {
       this.anakBuah = [{ id: 'ab1', nama: 'Rosi' }, { id: 'ab2', nama: 'Muhlis' }, { id: 'ab3', nama: 'Alul' }];
       this.backupDue = this.cadanganPerlu();
       this.$watch('currentDay', () => { if (this.view === 'jual') this.bukaHariMakan(); });
+      this.$watch('currentDay', () => {
+        const m = document.querySelector('main');
+        if (!m) return;
+        m.classList.remove('ganti-hari'); void m.offsetWidth; m.classList.add('ganti-hari');
+      });
       this.$watch(() => this.snapshotState(),
         v => {
           if (!this.siapSimpan || this._savingWatch || !this._localReady || v === this._lastSnapshot) return;
@@ -1783,7 +1835,7 @@ function app() {
         }, 150);
       });
     },
-    go(v) { this.view = v; this.isiHariMakan(); if (v === 'nota' && this.nota.kepada) this.notaIsi(); window.scrollTo(0, 0); },
+    go(v) { if (navigator.vibrate) navigator.vibrate(8); this.view = v; this.isiHariMakan(); if (v === 'nota' && this.nota.kepada) this.notaIsi(); window.scrollTo(0, 0); },
     calBulan: '',
     calGeser(n) {
       const base = this.calBulan || this.currentDay.slice(0, 7);
@@ -1821,6 +1873,10 @@ function app() {
       if (popupSebelumnyaTerbuka) this.modal.open = true;
     },
     pageKicker() { return { dash: 'Beranda', jual: 'Penjualan', pengirim: 'Pengirim', tagihan: 'Keuangan', untung: 'Laporan', nota: 'Dokumen' }[this.view] || ''; },
+    idxNav() {
+      const daftar = this.menu.filter(x => x.id !== 'makan');
+      return Math.max(0, daftar.findIndex(m => this.view === m.id || (m.id === 'pengirim' && this.view === 'setoran')));
+    },
     pageTitle() { return { dash: 'Dashboard', jual: 'Penjualan', pengirim: 'Nota', tagihan: 'Bon', untung: 'Laba', nota: 'Cetak Bon', makan: 'Uang Makan' }[this.view] || ''; },
 
     // ===== format & util =====
