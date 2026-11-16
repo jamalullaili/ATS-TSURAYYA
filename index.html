@@ -277,12 +277,7 @@
                           <td class="px-4 py-2 text-right whitespace-nowrap" x-text="rp(card.totalTagihan)"></td>
                         </tr>
                         <template x-for="s in card.payments" :key="s.id">
-                          <tr class="text-slate-700 border-t border-slate-200/70 bg-emerald-50/30">
-                            <td colspan="1" class="px-4 py-1.5 text-right align-middle">
-                              <span class="font-semibold text-slate-700" x-text="'TU - ' + dmy(s.tanggal)"></span>
-                            </td>
-                            <td class="px-4 py-1.5 text-right font-bold text-emerald-700 whitespace-nowrap align-middle" x-text="'- ' + rp(s.jumlah)"></td>
-                          </tr>
+                          <tr class="text-slate-700 border-t border-slate-200/70 bg-emerald-50/30"><td colspan="1" class="px-4 py-1.5 text-right align-middle text-xs">TU - <span x-text="dmy(s.tanggal)"></span></td><td class="px-4 py-1.5 text-right font-semibold text-slate-800 whitespace-nowrap align-middle text-xs" x-text="rp(s.jumlah)"></td></tr>
                         </template>
                         <tr class="bg-rose-50/70 font-extrabold text-rose-700 border-t border-slate-300 text-sm">
                           <td colspan="1" class="px-4 py-2.5 text-right uppercase">Sisa Tagihan</td>
@@ -323,7 +318,7 @@
                               <span x-text="r.nama"></span>
                               <span x-show="r.ket" class="block text-[10px] font-normal text-slate-500" x-text="r.ket"></span>
                             </td>
-                            <td class="td !py-2 text-right font-semibold text-slate-900 whitespace-nowrap"><span x-text="rp(r.tagihan)"></span><span x-show="setorHariTxt(r.nama, r.hari)" class="block text-[10px] font-medium text-rose-700 leading-tight mt-0.5" x-text="setorHariTxt(r.nama, r.hari)"></span></td>
+                            <td class="td !py-2 text-right font-semibold text-slate-900 whitespace-nowrap"><span x-text="rp(r.tagihan)"></span><template x-for="t in (r.tu || [])" :key="t.tgl + '-' + t.jumlah"><span class="block text-[10px] font-medium text-emerald-700 leading-tight mt-0.5" x-text="'TU - ' + dmy(t.tgl) + ' · ' + rp(t.jumlah)"></span></template><span x-show="(r.tu || []).length > 0" class="block text-[10px] font-medium text-slate-500 leading-tight mt-0.5" x-text="'sisa ' + rp(r.sisa)"></span></td>
                           </tr>
                         </template>
                       </tbody>
@@ -332,15 +327,7 @@
                           <td colspan="2" class="px-4 py-2 text-right uppercase">Jumlah Tagihan</td>
                           <td class="px-4 py-2 text-right whitespace-nowrap" x-text="rp(setorBelumGrouped().centenganCard.totalTagihan)"></td>
                         </tr>
-                        <template x-for="s in setorBelumGrouped().centenganCard.payments" :key="s.id">
-                          <tr class="text-slate-700 border-t border-slate-200/70 bg-emerald-50/30">
-                            <td colspan="2" class="px-4 py-1.5 text-right align-middle">
-                              <span class="font-semibold text-slate-700" x-text="'TU - ' + dmy(s.tanggal)"></span>
-                              <span class="text-[10px] text-slate-500" x-text="'(' + dmy(s.tanggal) + ')'"></span>
-                            </td>
-                            <td class="px-4 py-1.5 text-right font-bold text-emerald-700 whitespace-nowrap align-middle" x-text="'- ' + rp(s.jumlah)"></td>
-                          </tr>
-                        </template>
+                        
                         
                         <tr class="bg-rose-50/70 font-extrabold text-rose-700 border-t border-slate-300 text-sm">
                           <td colspan="2" class="px-4 py-2.5 text-right uppercase">Sisa Tagihan</td>
@@ -2960,7 +2947,11 @@ function app() {
           const pObj = this.pengirim.find(p => p.hari === u.hari && (p.nama || '').trim().toLowerCase() === kunci);
           const ket = this.barang.filter(b => b.hari === u.hari && (b.pengirim || '').trim().toLowerCase() === kunci)
             .map(b => b.nama + (b.qty ? ' ' + this.num(b.qty) + 'kg' : '')).join(', ');
-          return { hari: u.hari, nama: info.nama, pId: pObj ? pObj.id : '', ket, tagihan: u.total };
+          return {
+            hari: u.hari, nama: info.nama, pId: pObj ? pObj.id : '', ket, tagihan: u.total,
+            tu: (u.rincianBayar || []).map(r => ({ tgl: r.tgl, jumlah: r.jumlah })),
+            sisa: Math.max(0, u.total - u.alloc - (u.potongan || 0))
+          };
         });
         const payments = [];
         h.pays.forEach(c => {
