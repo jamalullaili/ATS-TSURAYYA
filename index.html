@@ -1841,9 +1841,8 @@ function app() {
       if (!st.g) return;
       // Tombol kembali dari menu mana pun langsung ke Dashboard
       if (this.view !== 'dash') {
-        this.view = 'dash';
-        window.scrollTo(0, 0);
         history.pushState({ v: 'dash' }, '', '#dash');
+        this.go('dash');
         return;
       }
       // Di Dashboard: tekan dua kali dalam 2 detik untuk keluar
