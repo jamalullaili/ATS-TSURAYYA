@@ -66,7 +66,9 @@
     .no-print { display: none !important; }
     body * { visibility: hidden !important; }
     #cetak, #cetak * { visibility: visible !important; }
-    #cetak { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; }
+    @page { size: A6; margin: 6mm; }
+    #cetak { position: absolute; left: 0; top: 0; width: 119% !important; zoom: 0.84; padding: 12px !important; background: #fff !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #cetak * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 <link rel="manifest" href="manifest.json">
@@ -966,7 +968,7 @@
                 </template>
               </tbody>
               <tfoot class="whitespace-nowrap">
-                <tr class="font-bold text-sm text-[#0b2f5b] bg-slate-50">
+                <tr x-show="nota.rows.filter(r => !r.keluar).length > 1" class="font-bold text-sm text-[#0b2f5b] bg-slate-50">
                   <td colspan="4" class="border border-slate-600 p-1 sm:p-2 text-right uppercase">JUMLAH</td>
                   <td class="border border-slate-600 p-1 sm:p-2 text-right" x-text="rp(notaTotal())"></td>
                 </tr>
@@ -1493,7 +1495,6 @@
   </div>
 </div>
 
-<div x-show="toast.open" x-cloak class="fixed left-1/2 -translate-x-1/2 bottom-28 z-[80] bg-stone-900 text-white text-xs font-semibold rounded-full px-4 py-2 shadow-lg whitespace-nowrap" x-text="toast.msg"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -1595,7 +1596,6 @@ function app() {
     nota: { kepada: '', rows: [] },
     modal: { open: false, type: '', title: '', f: {}, id: null, parent: null },
     confirmBox: { open: false, msg: '', fn: null },
-    toast: { open: false, msg: '' },
 
     menu: [
       { id: 'dash', ikon: 'ri-dashboard-fill', label: 'Dashboard', desc: 'Ringkasan & menu utama' },
@@ -1640,9 +1640,7 @@ function app() {
         });
       this.initDB().then(ok => { if (ok) this.initCloud(); });
       if (location.hash) { const h = location.hash.slice(1); if (this.menu.some(m => m.id === h)) this.view = h; }
-      history.replaceState({ g: 1 }, '', location.pathname + location.search);
-      history.pushState({ v: this.view }, '', '#' + this.view);
-      window.addEventListener('popstate', e => this.tanganiKembali(e));
+
     },
 
     async simpanLokalTertunda() {
@@ -1814,7 +1812,7 @@ function app() {
 
     bukaAndScroll(hari, viewTarget, targetId) {
       this.setDay(hari);
-      this.pindahView(viewTarget);
+      this.view = viewTarget;
       this.searchModal.open = false;
       this.$nextTick(() => {
         setTimeout(() => {
@@ -1829,38 +1827,7 @@ function app() {
         }, 150);
       });
     },
-    pindahView(v) { if (v !== this.view) history.replaceState({ v: v }, '', '#' + v); this.view = v; },
-    showToast(msg) { this.toast = { open: true, msg: msg }; clearTimeout(this._toastT); this._toastT = setTimeout(() => { this.toast.open = false; }, 2000); },
-    tanganiKembali(e) {
-      if (this.modal.open || this.searchModal.open || this.confirmBox.open || this.loginPopup.open) {
-        this.modal.open = false; this.searchModal.open = false; this.confirmBox.open = false; this.loginPopup.open = false;
-        history.pushState({ v: this.view }, '', '#' + this.view);
-        return;
-      }
-      const st = e.state || {};
-      // Langkah kedua dari "kembali ke Dashboard": maju ke riwayat dashboard, tanpa membuat riwayat baru
-      if (this._keDash) {
-        this._keDash = false;
-        history.replaceState({ v: 'dash' }, '', '#dash');
-        this.view = 'dash';
-        window.scrollTo(0, 0);
-        return;
-      }
-      if (!st.g) return;
-      // Tombol kembali dari menu mana pun langsung ke Dashboard
-      if (this.view !== 'dash') {
-        this._keDash = true;
-        history.go(1);
-        return;
-      }
-      // Di Dashboard: tekan dua kali dalam 2 detik untuk keluar
-      const now = Date.now();
-      if (this._kembaliAt && now - this._kembaliAt < 2000) { history.back(); return; }
-      this._kembaliAt = now;
-      this.showToast('Tekan sekali lagi untuk keluar');
-      history.pushState({ v: 'dash' }, '', '#dash');
-    },
-    go(v) { if (navigator.vibrate) navigator.vibrate(8); this.pindahView(v); this.isiHariMakan(); if (v === 'nota' && this.nota.kepada) this.notaIsi(); window.scrollTo(0, 0); },
+    go(v) { if (navigator.vibrate) navigator.vibrate(8); this.view = v; this.isiHariMakan(); if (v === 'nota' && this.nota.kepada) this.notaIsi(); window.scrollTo(0, 0); },
     calBulan: '',
     calGeser(n) {
       const base = this.calBulan || this.currentDay.slice(0, 7);
