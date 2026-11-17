@@ -1,4 +1,4 @@
-const CACHE = 'ats-tsurayya-v2';
+const CACHE = 'ats-tsurayya-v1';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
