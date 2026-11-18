@@ -3688,12 +3688,18 @@ function app() {
           writes.slice(i, i + 400).forEach(w => batch.set(w.ref, w.value));
           await batch.commit();
         }
-        const verifySnapshots = await Promise.all(allCollections.map(name => ref.collection(name).get()));
-        const verified = new Map();
-        verifySnapshots.forEach((q, i) => q.docs.forEach(d => verified.set(allCollections[i] + '/' + d.id, d.data())));
-        for (const [key, entry] of desired) {
-          const actual = verified.get(key);
-          if (!actual || this.cloudStableJson(actual) !== this.cloudStableJson(entry.value)) throw new Error('Verifikasi dokumen gagal (' + entry.collection + '/' + entry.id + '). Data lama tidak dihapus.');
+        // Verifikasi hanya dokumen yang benar-benar ditulis, bukan seluruh koleksi.
+        // Commit batch Firestore sudah mendapat acknowledgement server; pembacaan
+        // terbatas ini menjadi pengaman sebelum dokumen lama dibersihkan.
+        for (let i = 0; i < writes.length; i += 10) {
+          const checks = await Promise.all(writes.slice(i, i + 10).map(w => w.ref.get()));
+          for (let j = 0; j < checks.length; j++) {
+            const snap = checks[j];
+            const expected = writes[i + j];
+            if (!snap.exists || this.cloudStableJson(snap.data()) !== this.cloudStableJson(expected.value)) {
+              throw new Error('Verifikasi dokumen gagal (' + expected.ref.path + '). Data lama tidak dihapus.');
+            }
+          }
         }
         for (let i = 0; i < deletes.length; i += 400) {
           await fbDb.runTransaction(async tx => {
@@ -3861,15 +3867,10 @@ function app() {
         const expectedVersion = Number(latestMeta.updatedAt || latestMeta.splitUpdatedAt) || 0;
         this.cloudStatus = restorePending ? 'Mengirim hasil pemulihan JSON ke Cloud...' : 'Menyinkronkan data lokal ke Cloud...';
         const version = await this.tulisStateCloudTerpisah(state, expectedVersion);
-        const verifySnap = await ref.get();
-        const verifyMeta = verifySnap.exists ? (verifySnap.data() || {}) : {};
-        const verifiedState = await this.bacaStateCloudTerpisah(verifyMeta);
-        if (this.cloudStableJson(verifiedState) !== json) {
-          const keys = [...new Set([...Object.keys(state), ...Object.keys(verifiedState)])];
-          const beda = keys.find(k => this.cloudStableJson(state[k]) !== this.cloudStableJson(verifiedState[k]));
-          throw new Error('Verifikasi setelah pengiriman gagal pada bagian "' + (beda || 'struktur data') + '". Data lokal tetap dipertahankan.');
-        }
-        const verifiedVersion = Number(verifyMeta.splitUpdatedAt || verifyMeta.updatedAt || version) || version;
+        // tulisStateCloudTerpisah hanya mengembalikan versi setelah semua batch
+        // berhasil di-commit dan metadata versi diperbarui oleh transaksi server.
+        // Jangan unduh ulang seluruh koleksi untuk verifikasi kedua kalinya.
+        const verifiedVersion = Number(version) || Date.now();
         const normalized = JSON.stringify(state);
         await dbSet(KEY, normalized);
         await dbSet('ats_meta_local_saved', verifiedVersion);
