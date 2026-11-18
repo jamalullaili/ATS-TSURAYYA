@@ -3345,9 +3345,10 @@ function app() {
         : (v && typeof v === 'object' ? Object.keys(v).sort().reduce((o, k) => { o[k] = rapikan(v[k]); return o; }, {}) : v);
       return JSON.stringify(rapikan(value));
     },
+    cloudStateKey(collection) { return collection === 'nota' ? 'pengirim' : collection; },
     validasiStateCloud(state) {
       if (!state || typeof state !== 'object' || Array.isArray(state)) throw new Error('Struktur data tidak valid.');
-      const arrays = [...this.cloudRecordCollections(), 'trx'];
+      const arrays = [...this.cloudRecordCollections().map(k => this.cloudStateKey(k)), 'trx'];
       for (const k of arrays) if (state[k] !== undefined && !Array.isArray(state[k])) throw new Error('Bagian data "' + k + '" harus berupa daftar.');
       for (const k of ['days', 'makanDays']) for (const v of (state[k] || [])) if (typeof v !== 'string') throw new Error('Isi "' + k + '" tidak valid.');
       for (const k of arrays.filter(x => x !== 'days' && x !== 'makanDays')) {
@@ -3368,7 +3369,8 @@ function app() {
       return ['days', 'makanDays', 'nota', 'barang', 'diluar', 'setoran', 'pembayaran', 'pembayaranP', 'riwayat', 'anakBuah', 'absenMakan', 'bayarMakan'];
     },
     siapkanIdCloud(state) {
-      this.cloudRecordCollections().forEach(k => {
+      this.cloudRecordCollections().forEach(collection => {
+        const k = this.cloudStateKey(collection);
         if (!Array.isArray(state[k])) state[k] = [];
         if (k === 'days' || k === 'makanDays') return;
         state[k].forEach(item => { if (item && (item.id === undefined || item.id === null || item.id === '')) item.id = uid(); });
@@ -3387,7 +3389,8 @@ function app() {
           const ao = a.data()?._atsOrder, bo = b.data()?._atsOrder;
           return Number.isFinite(ao) && Number.isFinite(bo) ? ao - bo : a.id.localeCompare(b.id);
         });
-        state[name] = docs.map(d => {
+        const stateKey = this.cloudStateKey(name);
+        state[stateKey] = docs.map(d => {
           const x = d.data() || {};
           if (name === 'days' || name === 'makanDays') return x.value;
           const { _atsOrder, ...clean } = x;
@@ -3442,7 +3445,8 @@ function app() {
         const buckets = new Set();
         const add = (collection, id, value) => desired.set(collection + '/' + id, { collection, id, value });
         this.cloudRecordCollections().forEach(name => {
-          (state[name] || []).forEach((item, i) => {
+          const stateKey = this.cloudStateKey(name);
+          (state[stateKey] || []).forEach((item, i) => {
             if (name === 'days' || name === 'makanDays') add(name, this.cloudDocId(item), { value: item, _atsOrder: i });
             else if (item && typeof item === 'object') add(name, this.cloudDocId(item.id), { ...item, _atsOrder: i });
           });
@@ -3652,7 +3656,11 @@ function app() {
         const verifySnap = await ref.get();
         const verifyMeta = verifySnap.exists ? (verifySnap.data() || {}) : {};
         const verifiedState = await this.bacaStateCloudTerpisah(verifyMeta);
-        if (this.cloudStableJson(verifiedState) !== json) throw new Error('Verifikasi setelah pengiriman gagal. Data lokal tetap dipertahankan.');
+        if (this.cloudStableJson(verifiedState) !== json) {
+          const keys = [...new Set([...Object.keys(state), ...Object.keys(verifiedState)])];
+          const beda = keys.find(k => this.cloudStableJson(state[k]) !== this.cloudStableJson(verifiedState[k]));
+          throw new Error('Verifikasi setelah pengiriman gagal pada bagian "' + (beda || 'struktur data') + '". Data lokal tetap dipertahankan.');
+        }
         const verifiedVersion = Number(verifyMeta.splitUpdatedAt || verifyMeta.updatedAt || version) || version;
         const normalized = JSON.stringify(state);
         await dbSet(KEY, normalized);
