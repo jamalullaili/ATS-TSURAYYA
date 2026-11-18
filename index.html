@@ -699,7 +699,7 @@
             <input type="date" x-model="currentDay" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-sm font-bold bg-white">
           </div>
         </div>
-        <div class="rounded-2xl bg-white border border-stone-200 shadow-sm p-4 space-y-4"><div class="grid grid-cols-2 gap-3"><div class="rounded-xl border border-amber-200 bg-amber-50/60 px-3 sm:px-4 py-3" :class="tampilHari().lunas ? '' : 'col-span-2'"><p class="text-[10px] uppercase tracking-[.14em] text-amber-700 font-semibold">Estimasi</p><p class="font-bold tracking-tight text-amber-800 mt-1" :class="tampilHari().lunas ? 'text-lg sm:text-xl' : 'text-xl sm:text-3xl'" x-text="rp(tampilHari().potensi)"></p></div><div x-show="tampilHari().lunas" class="rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 sm:px-4 py-3"><p class="text-[10px] uppercase tracking-[.14em] text-emerald-700 font-semibold">Laba</p><p class="text-xl sm:text-3xl font-bold tracking-tight text-emerald-800 mt-1" x-text="rp(tampilHari().real)"></p></div></div><div class="grid grid-cols-3 gap-2 sm:gap-3"><div class="rounded-xl border border-stone-200 bg-stone-50/70 px-2 sm:px-3 py-2.5"><p class="text-[10px] uppercase tracking-[.14em] text-stone-500 font-semibold">Penjualan</p><p class="text-xs sm:text-sm font-semibold whitespace-nowrap text-stone-900 mt-0.5" x-text="rp(dayAll('penjualan'))"></p></div><div class="rounded-xl border border-stone-200 bg-stone-50/70 px-2 sm:px-3 py-2.5"><p class="text-[10px] uppercase tracking-[.14em] text-stone-500 font-semibold">Modal</p><p class="text-xs sm:text-sm font-semibold whitespace-nowrap text-stone-900 mt-0.5" x-text="rp(dayAll('modal'))"></p></div><div class="rounded-xl border border-stone-200 bg-stone-50/70 px-2 sm:px-3 py-2.5"><p class="text-[10px] uppercase tracking-[.14em] text-stone-500 font-semibold">Ongkos</p><p class="text-xs sm:text-sm font-semibold whitespace-nowrap text-stone-900 mt-0.5" x-text="rp(dayAll('ongkos'))"></p></div></div></div>
+        <div class="rounded-2xl bg-white border border-stone-200 shadow-sm p-4 space-y-4"><div class="rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 sm:px-4 py-3"><p class="text-[10px] uppercase tracking-[.14em] text-emerald-700 font-semibold">Laba</p><p class="text-xl sm:text-3xl font-bold tracking-tight text-emerald-800 mt-1" x-text="rp(tampilHari().laba)"></p></div><div class="grid grid-cols-3 gap-2 sm:gap-3"><div class="rounded-xl border border-stone-200 bg-stone-50/70 px-2 sm:px-3 py-2.5"><p class="text-[10px] uppercase tracking-[.14em] text-stone-500 font-semibold">Penjualan</p><p class="text-xs sm:text-sm font-semibold whitespace-nowrap text-stone-900 mt-0.5" x-text="rp(dayAll('penjualan'))"></p></div><div class="rounded-xl border border-stone-200 bg-stone-50/70 px-2 sm:px-3 py-2.5"><p class="text-[10px] uppercase tracking-[.14em] text-stone-500 font-semibold">Modal</p><p class="text-xs sm:text-sm font-semibold whitespace-nowrap text-stone-900 mt-0.5" x-text="rp(dayAll('modal'))"></p></div><div class="rounded-xl border border-stone-200 bg-stone-50/70 px-2 sm:px-3 py-2.5"><p class="text-[10px] uppercase tracking-[.14em] text-stone-500 font-semibold">Ongkos</p><p class="text-xs sm:text-sm font-semibold whitespace-nowrap text-stone-900 mt-0.5" x-text="rp(dayAll('ongkos'))"></p></div></div></div>
 
         <template x-for="(p, pi) in dayPengirim()" :key="p.id">
           <div class="card overflow-hidden" :id="'setoran-card-' + p.id">
@@ -708,7 +708,7 @@
                 <span x-text="p.nama"></span>
                 <span x-show="p.jenis === 'Centengan'" class="ml-2 badge bg-amber-300 text-amber-900">CENTENGAN</span>
               </p>
-              <div class="text-right text-sm"><p x-show="tampilPengirim(p).lunas" class="text-[11px] uppercase tracking-wider text-emerald-200">Laba <span class="font-bold text-emerald-300 text-sm normal-case tracking-normal" x-text="rp(tampilPengirim(p).real)"></span></p><p class="text-[11px] text-amber-300">Estimasi <span class="font-bold" x-text="rp(tampilPengirim(p).potensi)"></span></p></div>
+              <div class="text-right text-sm"><p class="text-[11px] uppercase tracking-wider text-emerald-200">Laba <span class="font-bold text-emerald-300 text-sm normal-case tracking-normal" x-text="rp(tampilPengirim(p).laba)"></span></p></div>
             </div>
 
             <div class="pb-4 space-y-4">
@@ -723,7 +723,7 @@
                         <td class="td" x-text="r.dus"></td>
                         <td class="td" x-text="num(r.masuk)"></td>
                         <td class="td">
-                          <input type="text" inputmode="numeric" :value="fmt(r.ref.modal)" @input="r.ref.modal = dg($event.target.value); $el.value = fmt(r.ref.modal)" class="inp w-20 !py-1">
+                          <input type="text" inputmode="decimal" :value="fmt(r.ref.modal)" @input="r.ref.modal = dg($event.target.value); $el.value = fmtInput($event.target.value)" class="inp w-20 !py-1">
                         </td>
                         <td class="td whitespace-nowrap min-w-[8rem]" x-text="rp(r.modalTotal)"></td>
                         <td class="td font-semibold" x-text="rp(r.jual)"></td>
@@ -844,7 +844,7 @@
                 </div>
                 <div>
                   <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah (Rp)</label>
-                  <input type="text" inputmode="numeric" :value="fmt(bayarMakanForm.jumlah)" @input="bayarMakanForm.jumlah = dg($event.target.value); $el.value = fmt(bayarMakanForm.jumlah)" placeholder="Rp 0" class="inp">
+                  <input type="text" inputmode="decimal" :value="fmt(bayarMakanForm.jumlah)" @input="bayarMakanForm.jumlah = dg($event.target.value); $el.value = fmtInput($event.target.value)" placeholder="Rp 0" class="inp">
                 </div>
               </div>
               <p x-show="previewBayarMakan() && previewBayarMakan().hari > 0" class="text-xs text-stone-600"
@@ -1005,8 +1005,8 @@
                 </div>
                 <div class="grid grid-cols-12 gap-2 items-center">
                   <div class="col-span-6"><label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Barang</label><input type="text" x-model="r.desk" placeholder="Nama barang" class="inp !py-1 !px-2 !text-xs bg-white"></div>
-                  <div class="col-span-2"><label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5 text-center">Qty</label><input type="text" inputmode="numeric" :value="fmt(r.qty)" @input="r.qty = dg($event.target.value); $el.value = fmt(r.qty)" class="inp !py-1 !px-1 text-center bg-white"></div>
-                  <div class="col-span-4"><label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5 text-right">Harga</label><input type="text" inputmode="numeric" :value="fmt(r.harga)" @input="r.harga = dg($event.target.value); $el.value = fmt(r.harga)" class="inp !py-1 !px-2 !text-xs text-right bg-white"></div>
+                  <div class="col-span-2"><label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5 text-center">Qty</label><input type="text" inputmode="decimal" :value="fmt(r.qty)" @input="r.qty = dg($event.target.value); $el.value = fmtInput($event.target.value)" class="inp !py-1 !px-1 text-center bg-white"></div>
+                  <div class="col-span-4"><label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5 text-right">Harga</label><input type="text" inputmode="decimal" :value="fmt(r.harga)" @input="r.harga = dg($event.target.value); $el.value = fmtInput($event.target.value)" class="inp !py-1 !px-2 !text-xs text-right bg-white"></div>
                 </div>
               </div>
             </template>
@@ -1245,7 +1245,7 @@
             </template>
           </div>
         </div>
-        <div x-show="modal.f.jenis !== 'Centengan'"><label class="block text-xs font-semibold text-slate-600 mb-1">Ongkos (Rp)</label><input type="text" inputmode="numeric" :value="fmt(modal.f.ongkos)" @input="modal.f.ongkos = dg($event.target.value); $el.value = fmt(modal.f.ongkos)" class="inp"></div>
+        <div x-show="modal.f.jenis !== 'Centengan'"><label class="block text-xs font-semibold text-slate-600 mb-1">Ongkos (Rp)</label><input type="text" inputmode="decimal" :value="fmt(modal.f.ongkos)" @input="modal.f.ongkos = dg($event.target.value); $el.value = fmtInput($event.target.value)" class="inp"></div>
       </div>
     </template>
 
@@ -1254,9 +1254,9 @@
         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nama barang</label><input type="text" x-model="modal.f.nama" placeholder="Contoh: Ori, Cmk, Pcu" class="inp"></div>
         <div class="grid grid-cols-2 gap-3">
           <div><label class="block text-xs font-semibold text-slate-600 mb-1">Dus</label><input type="text" x-model="modal.f.dus" class="inp"></div>
-          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Qty</label><input type="text" x-model="modal.f.qty" placeholder="200" class="inp"></div>
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Qty</label><input type="text" inputmode="decimal" :value="fmt(modal.f.qty)" @input="modal.f.qty = dg($event.target.value); $el.value = fmtInput($event.target.value)" placeholder="200" class="inp"></div>
         </div>
-        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Modal per kg (Rp)</label><input type="text" inputmode="numeric" :value="fmt(modal.f.modal)" @input="modal.f.modal = dg($event.target.value); $el.value = fmt(modal.f.modal)" class="inp"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Modal per kg (Rp)</label><input type="text" inputmode="decimal" :value="fmt(modal.f.modal)" @input="modal.f.modal = dg($event.target.value); $el.value = fmtInput($event.target.value)" class="inp"></div>
       </div>
     </template>
 
@@ -1266,10 +1266,10 @@
           <select x-model="modal.f.jenis" class="inp"><option value="Lain">Pengecer lain</option><option value="Lapak">Lapak</option><option value="Lapak II">Lapak II</option></select></div>
         <div x-show="!String(modal.f.jenis || '').startsWith('Lapak')"><label class="block text-xs font-semibold text-slate-600 mb-1">Nama pengecer</label><input type="text" x-model="modal.f.pengecer" placeholder="Contoh: Lipi, P. Yono" class="inp" list="daftar-pengecer"><datalist id="daftar-pengecer"><template x-for="nm in namaPengecerUnik()" :key="nm"><option :value="nm"></option></template></datalist></div>
         <div class="grid grid-cols-2 gap-3">
-          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Qty</label><input type="text" :value="modal.f.qty" @input="modal.f.qty = $event.target.value; hitungTrxModal('qty')" class="inp"></div>
-          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Harga satuan (Rp)</label><input type="text" inputmode="numeric" :value="fmt(modal.f.harga)" @input="hitungTrxModal('harga', dg($event.target.value)); $el.value = fmt(modal.f.harga)" class="inp"></div>
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Qty</label><input type="text" inputmode="decimal" :value="fmt(modal.f.qty)" @input="modal.f.qty = dg($event.target.value); hitungTrxModal('qty'); $el.value = fmtInput($event.target.value)" class="inp"></div>
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Harga satuan (Rp)</label><input type="text" inputmode="decimal" :value="fmt(modal.f.harga)" @input="hitungTrxModal('harga', dg($event.target.value)); $el.value = fmtInput($event.target.value)" class="inp"></div>
         </div>
-        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Total (Rp)</label><input type="text" inputmode="numeric" :readonly="!String(modal.f.jenis || '').startsWith('Lapak')" :class="String(modal.f.jenis || '').startsWith('Lapak') ? '' : 'bg-slate-100'" :value="fmt(modal.f.total)" @input="if (String(modal.f.jenis || '').startsWith('Lapak')) { hitungTrxModal('total', dg($event.target.value)); $el.value = fmt(modal.f.total); }" class="inp font-semibold"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Total (Rp)</label><input type="text" inputmode="decimal" :readonly="!String(modal.f.jenis || '').startsWith('Lapak')" :class="String(modal.f.jenis || '').startsWith('Lapak') ? '' : 'bg-slate-100'" :value="fmt(modal.f.total)" @input="if (String(modal.f.jenis || '').startsWith('Lapak')) { hitungTrxModal('total', dg($event.target.value)); $el.value = fmtInput($event.target.value); }" class="inp font-semibold"></div>
         <p x-show="String(modal.f.jenis || '').startsWith('Lapak')" class="text-[11px] text-stone-400 -mt-2">Isi harga satuan atau total, yang lain terhitung otomatis.</p>
       </div>
     </template>
@@ -1277,10 +1277,10 @@
     <template x-if="modal.type === 'bayarLapak'">
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-3">
-          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Qty</label><input type="text" :value="modal.f.qty" @input="modal.f.qty = $event.target.value; hitungTrxModal('qty')" class="inp"></div>
-          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Harga satuan (Rp)</label><input type="text" inputmode="numeric" :value="fmt(modal.f.harga)" @input="hitungTrxModal('harga', dg($event.target.value)); $el.value = fmt(modal.f.harga)" class="inp"></div>
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Qty</label><input type="text" inputmode="decimal" :value="fmt(modal.f.qty)" @input="modal.f.qty = dg($event.target.value); hitungTrxModal('qty'); $el.value = fmtInput($event.target.value)" class="inp"></div>
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Harga satuan (Rp)</label><input type="text" inputmode="decimal" :value="fmt(modal.f.harga)" @input="hitungTrxModal('harga', dg($event.target.value)); $el.value = fmtInput($event.target.value)" class="inp"></div>
         </div>
-        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Total (Rp)</label><input type="text" inputmode="numeric" :value="fmt(modal.f.total)" @input="hitungTrxModal('total', dg($event.target.value)); $el.value = fmt(modal.f.total)" class="inp font-semibold"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Total (Rp)</label><input type="text" inputmode="decimal" :value="fmt(modal.f.total)" @input="hitungTrxModal('total', dg($event.target.value)); $el.value = fmtInput($event.target.value)" class="inp font-semibold"></div>
         <p class="text-[11px] text-stone-400 -mt-2">Isi harga satuan atau total, yang lain terhitung otomatis.</p>
         <div class="grid grid-cols-2 gap-3">
           <div><label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal bayar</label><input type="date" x-model="modal.f.tgl" class="inp"></div>
@@ -1289,7 +1289,7 @@
               <label class="block text-xs font-semibold text-slate-600">Jumlah bayar (Rp)</label>
               <button type="button" @click="modal.f.jumlah = modal.f.total" class="text-[11px] font-bold text-indigo-700 hover:underline">Isi total</button>
             </div>
-            <input type="text" inputmode="numeric" :value="fmt(modal.f.jumlah)" @input="modal.f.jumlah = dg($event.target.value); $el.value = fmt(modal.f.jumlah)" class="inp">
+            <input type="text" inputmode="decimal" :value="fmt(modal.f.jumlah)" @input="modal.f.jumlah = dg($event.target.value); $el.value = fmtInput($event.target.value)" class="inp">
           </div>
           <div><label class="block text-xs font-semibold text-slate-600 mb-1">Metode</label><select x-model="modal.f.metode" class="inp"><option>Cash</option><option>Tf</option></select></div>
         </div>
@@ -1345,8 +1345,8 @@
               <label class="text-xs font-semibold text-slate-600">Jumlah (Rp)</label>
               <button type="button" @click="modal.f.jumlah = bayarTarget()" class="text-[11px] font-bold underline">Isi sisa</button>
             </div>
-            <input type="text" inputmode="numeric" :value="fmt(modal.f.jumlah)"
-                   @input="modal.f.jumlah = dg($event.target.value); $el.value = fmt(modal.f.jumlah)"
+            <input type="text" inputmode="decimal" :value="fmt(modal.f.jumlah)"
+                   @input="modal.f.jumlah = dg($event.target.value); $el.value = fmtInput($event.target.value)"
                    class="inp" placeholder="Rp 0">
           </div>
           <div x-show="modal.kind !== 'nota' || modal.ref.jenis === 'Centengan'">
@@ -1464,7 +1464,7 @@
               <label class="block text-xs font-semibold text-slate-600">Jumlah (Rp)</label>
               <button type="button" x-show="sisaTagihanModal() > 0" @click="isiSisaModal()" class="text-[11px] font-bold text-indigo-700 hover:underline">Isi Sisa</button>
             </div>
-            <input type="text" inputmode="numeric" :value="fmt(modal.f.jumlah)" @input="onInputJumlahBayar($event)" placeholder="Rp 0" class="inp">
+            <input type="text" inputmode="decimal" :value="fmt(modal.f.jumlah)" @input="onInputJumlahBayar($event)" placeholder="Rp 0" class="inp">
           </div>
           <div><label class="block text-xs font-semibold text-slate-600 mb-1">Metode</label><select x-model="modal.f.metode" class="inp"><option>Cash</option><option>Tf</option></select></div>
           <div>
@@ -1548,7 +1548,7 @@
               <label class="block text-sm font-semibold text-slate-700">Jumlah (Rp)</label>
               <button type="button" x-show="setorTargetSisa() > 0" @click="modal.f.jumlah = setorTargetSisa(); modal.f.status = 'Lunas'" class="text-xs font-bold text-slate-900 hover:underline">Isi sisa</button>
             </div>
-            <input type="text" inputmode="numeric" :value="fmt(modal.f.jumlah)" @input="modal.f.jumlah = dg($event.target.value); modal.f.status = setorSisaSetelah() <= 0 ? 'Lunas' : 'TU'; $el.value = fmt(modal.f.jumlah)" placeholder="Rp 0" class="inp">
+            <input type="text" inputmode="decimal" :value="fmt(modal.f.jumlah)" @input="modal.f.jumlah = dg($event.target.value); modal.f.status = setorSisaSetelah() <= 0 ? 'Lunas' : 'TU'; $el.value = fmtInput($event.target.value)" placeholder="Rp 0" class="inp">
           </div>
           <div x-show="modal.parent.jenis === 'Centengan'"><label class="block text-sm font-semibold text-slate-700 mb-1">Metode</label><select x-model="modal.f.metode" class="inp"><option>Cash</option><option>TF</option></select></div>
           <div><label class="block text-sm font-semibold text-slate-700 mb-1">Status</label><select x-model="modal.f.status" class="inp"><option value="TU">TU</option><option value="Lunas">Lunas</option></select></div>
@@ -1562,7 +1562,7 @@
 
     <template x-if="modal.type === 'diluar'">
       <div class="space-y-4">
-        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nama</label><input type="text" x-model="modal.f.nama" placeholder="Contoh: Bu Sri" class="inp"></div>
+        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nama</label><input type="text" x-model="modal.f.nama" placeholder="Contoh: Bu Sri" class="inp" list="daftar-diluar"><datalist id="daftar-diluar"><template x-for="nm in namaDiluarUnik()" :key="nm"><option :value="nm"></option></template></datalist></div>
         <div class="space-y-2">
           <label class="block text-xs font-semibold text-slate-600">Cara isi</label>
           <div class="grid grid-cols-2 gap-2">
@@ -1574,7 +1574,7 @@
         </div>
         <div x-show="modal.f.mode === 'nominal'">
           <label class="block text-xs font-semibold text-slate-600 mb-1">Nominal (Rp)</label>
-          <input type="text" inputmode="numeric" :value="fmt(modal.f.nominal)" @input="modal.f.nominal = dg($event.target.value); $el.value = fmt(modal.f.nominal)" placeholder="Rp 0" class="inp">
+          <input type="text" inputmode="decimal" :value="fmt(modal.f.nominal)" @input="modal.f.nominal = dg($event.target.value); $el.value = fmtInput($event.target.value)" placeholder="Rp 0" class="inp">
           <p class="text-sm font-bold text-slate-800 mt-2">Total: <span x-text="rp(formTotalD())"></span></p>
         </div>
         <div x-show="modal.f.mode !== 'nominal'">
@@ -1583,8 +1583,8 @@
             <template x-for="(it, i) in modal.f.items" :key="i">
               <div class="grid grid-cols-12 gap-2 items-center">
                 <input type="text" x-model="it.nama" placeholder="Barang" class="inp col-span-4 !py-1.5">
-                <input type="text" inputmode="decimal" x-model="it.berat" placeholder="Kg" class="inp col-span-3 !py-1.5">
-                <input type="text" inputmode="numeric" :value="fmt(it.harga)" @input="it.harga = dg($event.target.value); $el.value = fmt(it.harga)" placeholder="Harga/kg" class="inp col-span-4 !py-1.5">
+                <input type="text" inputmode="decimal" :value="fmt(it.berat)" @input="it.berat = dg($event.target.value); $el.value = fmtInput($event.target.value)" placeholder="Kg" class="inp col-span-3 !py-1.5">
+                <input type="text" inputmode="decimal" :value="fmt(it.harga)" @input="it.harga = dg($event.target.value); $el.value = fmtInput($event.target.value)" placeholder="Harga/kg" class="inp col-span-4 !py-1.5">
                 <button @click="ask('Hapus baris rincian barang ini?', () => modal.f.items.splice(i, 1))" class="col-span-1 text-rose-600 text-lg">&times;</button>
               </div>
             </template>
@@ -2181,8 +2181,9 @@ function app() {
       }
       this.modal.open = false;
     },
-    fmt(v) { const d = String(v ?? '').replace(/\D/g, ''); return d === '' ? '' : Number(d).toLocaleString('id-ID'); },
-    dg(v) { const d = String(v ?? '').replace(/\D/g, ''); return d === '' ? 0 : Number(d); },
+    fmt(v) { const n=Number(v); return v==null || v==='' || !Number.isFinite(n) ? '' : n.toLocaleString('id-ID',{maximumFractionDigits:3}); },
+    dg(v) { let s=String(v??'').trim().replace(/[^0-9.,-]/g,''); if(!s) return 0; if(s.includes(',')){ const a=s.split(','); s=a.slice(0,-1).join('').replace(/[.,]/g,'')+'.'+a.at(-1).replace(/\./g,''); } else s=s.replace(/\./g,''); const n=Number(s); return Number.isFinite(n)?n:0; },
+    fmtInput(v) { const s=String(v??''); const n=this.dg(s); const f=this.fmt(n); return /,$/.test(s) ? f+',' : f; },
     catat(nama, teks) { this.riwayat.push({ id: uid(), waktu: new Date().toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }), nama, teks }); if (this.riwayat.length > 300) this.riwayat.splice(0, this.riwayat.length - 300); },
     notaAktifData(n) {
       const nm = this.kunciNama(n);
@@ -2359,8 +2360,8 @@ function app() {
       return info.sisa + (Number(c.jumlah) || 0) + potCovered;
     },
     onInputJumlahBayar(e) {
-      this.modal.f.jumlah = e.target.value.replace(/\D/g, '');
-      e.target.value = this.fmt(this.modal.f.jumlah);
+      this.modal.f.jumlah = this.dg(e.target.value);
+      e.target.value = this.fmtInput(e.target.value);
       const j = this.dg(this.modal.f.jumlah);
       const sisa = this.sisaTagihanModal();
       const selisih = sisa - j;
@@ -2690,9 +2691,10 @@ function app() {
       namaD.forEach(n => this.alokasiNamaD(n));
     },
     namaPengecerUnik() {
-      const set = new Set(this.trx.filter(t => !String(t.jenis || '').startsWith('Lapak') && (t.pengecer || '').trim()).map(t => t.pengecer.trim()));
-      return [...set].sort((a, b) => a.localeCompare(b, 'id'));
+      const map = new Map(); this.trx.filter(t => !String(t.jenis || '').startsWith('Lapak') && (t.pengecer || '').trim()).forEach(t => { const n=t.pengecer.trim(); if(!map.has(n.toLowerCase())) map.set(n.toLowerCase(), n); });
+      return [...map.values()].sort((a, b) => a.localeCompare(b, 'id'));
     },
+    namaDiluarUnik() { const map=new Map(); this.diluar.filter(x=>(x.nama||'').trim()).forEach(x=>{const n=x.nama.trim();if(!map.has(n.toLowerCase()))map.set(n.toLowerCase(),n);}); return [...map.values()].sort((a,b)=>a.localeCompare(b,'id')); },
     exportCSV() {
       const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
       const head = ['Tanggal', 'Pengirim', 'Barang', 'Jenis', 'Pengecer', 'Qty', 'Harga', 'Total', 'Jumlah Bayar', 'Status', 'Tanggal Bayar'];
@@ -2924,7 +2926,7 @@ function app() {
       const jual = list.reduce((s, t) => s + (Number(t.total) || 0), 0);
       const qtyHarga = this.hariUntung(this.currentDay);
       const lunas = this.semuaLunas(list);
-      return { lunas, bayar, real: bayar - (jual - qtyHarga), potensi: qtyHarga };
+      return { lunas, bayar, laba: (lunas ? bayar : jual) - (jual - qtyHarga), real: bayar - (jual - qtyHarga), potensi: qtyHarga };
     },
     tampilPengirim(p) {
       const list = this.dayBarang(p).flatMap(b => this.dayTrx(p, b));
@@ -2932,7 +2934,7 @@ function app() {
       const jual = this.jualP(p);
       const qtyHarga = this.untungP(p);
       const lunas = this.semuaLunas(list);
-      return { lunas, bayar, real: bayar - (jual - qtyHarga), potensi: qtyHarga };
+      return { lunas, bayar, laba: (lunas ? bayar : jual) - (jual - qtyHarga), real: bayar - (jual - qtyHarga), potensi: qtyHarga };
     },
     hariDetail(m) {
       // Menu Keuntungan hanya menampilkan catatan sampai dengan hari ini.
@@ -2944,7 +2946,7 @@ function app() {
         const ongkos = this.pengirim.filter(p => p.hari === d && p.jenis !== 'Centengan').reduce((s, p) => s + (Number(p.ongkos) || 0), 0);
         const kurang = t.reduce((s, x) => s + this.sisaT(x), 0);
         const makan = this.bayarMakan.filter(b => b.tanggal === d).reduce((s, b) => s + (Number(b.jumlah) || 0), 0);
-        return { hari: d, jual, bayar, kurang, modal, ongkos, makan, untung: jual - modal - ongkos - makan };
+        const lunas = this.semuaLunas(t); const basis = lunas ? bayar : jual; return { hari: d, jual, bayar, kurang, modal, ongkos, makan, untung: basis - modal - ongkos - makan };
       });
     },
     sumHari(f) { return this.hariDetail(this.bulanAktif()).reduce((s, h) => s + (h[f] || 0), 0); },
@@ -3005,7 +3007,7 @@ function app() {
         const rows = buka.map(u => {
           const pObj = this.pengirim.find(p => p.hari === u.hari && (p.nama || '').trim().toLowerCase() === kunci);
           const ket = this.barang.filter(b => b.hari === u.hari && (b.pengirim || '').trim().toLowerCase() === kunci)
-            .map(b => b.nama + (b.qty ? ' ' + this.num(b.qty) + 'kg' : '')).join(', ');
+            .map(b => b.nama + (b.qty ? ' ' + this.num(b.qty) + 'kg' : '') + (b.modal != null ? ' × ' + this.rp(b.modal) : '')).join(', ');
           return {
             hari: u.hari, nama: info.nama, pId: pObj ? pObj.id : '', ket, tagihan: u.total,
             tu: (u.rincianBayar || []).map(r => ({ tgl: r.tgl, jumlah: r.jumlah })),
