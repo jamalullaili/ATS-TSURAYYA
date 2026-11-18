@@ -271,7 +271,19 @@
             </div>
             <p class="text-[11px] text-slate-400">Klik tanggal untuk membuka catatan. Titik hijau = ada transaksi.</p>
           </div>
-            <div class="card p-5 space-y-4">
+            <div x-data="{ storageExpanded: false }" class="space-y-2">
+              <button type="button" @click="storageExpanded = !storageExpanded" :aria-expanded="storageExpanded.toString()" class="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-sm flex items-center gap-3 text-left hover:border-slate-300 transition">
+                <span class="h-10 w-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-database text-lg" aria-hidden="true"></i></span>
+                <span class="min-w-0 flex-1">
+                  <span class="block text-sm font-bold text-slate-900">Penyimpanan &amp; Cadangan</span>
+                  <span class="block text-[11px] text-slate-500 mt-0.5" x-text="backupMsg()"></span>
+                  <span class="block text-[10px] text-slate-400 mt-0.5" x-text="storageInfo || 'Lokal · Cloud · Google Drive · JSON' "></span>
+                </span>
+                <span class="text-[10px] font-semibold text-slate-500 shrink-0" x-text="storageExpanded ? 'Tutup' : 'Lihat semua'"></span>
+                <i class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform" :class="storageExpanded ? 'rotate-180' : ''" aria-hidden="true"></i>
+              </button>
+              <div x-show="storageExpanded" x-cloak x-transition class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              <div class="rounded-2xl border border-slate-200 bg-white p-3 space-y-3 shadow-sm">
               <div class="flex items-start justify-between gap-3">
                 <div>
                   <h3 class="font-bold text-slate-900">Penyimpanan &amp; Cloud</h3>
@@ -305,14 +317,37 @@
                 </template>
               </div>
 
-              <div>
-                <p class="text-xs font-semibold text-slate-700 mb-2">Cadangan perangkat</p>
+              </div>
+              <div class="rounded-2xl border border-emerald-100 bg-white p-3 space-y-2 shadow-sm">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="text-xs font-bold text-slate-800">Google Drive · Backup tambahan</p>
+                  <span class="text-[10px] rounded-full bg-white px-2 py-1 text-emerald-700 font-semibold">JSON</span>
+                </div>
+                <p class="text-[11px] text-slate-500" x-text="driveStatus || 'Belum terhubung. Hubungkan akun Google untuk mengaktifkan backup Drive.'"></p>
+                <button @click="driveConnect()" class="btn btn-light !py-2 !px-3 !text-xs w-full" x-text="driveConnected ? 'Perbarui izin Google Drive' : 'Hubungkan Google Drive'"></button>
+                <div class="grid grid-cols-2 gap-2">
+                  <button @click="driveBackupNow()" :disabled="!driveConnected || driveBusy" class="btn btn-navy !py-2 !px-2 !text-xs disabled:opacity-50">Backup Sekarang</button>
+                  <button @click="driveLoadBackups()" :disabled="!driveConnected || driveBusy" class="btn btn-light !py-2 !px-2 !text-xs disabled:opacity-50">Lihat Backup</button>
+                </div>
+                <div x-show="driveFiles.length" class="space-y-2">
+                  <select x-model="driveSelectedId" class="inp text-xs">
+                    <option value="">Pilih cadangan untuk dipulihkan</option>
+                    <template x-for="f in driveFiles" :key="f.id"><option :value="f.id" x-text="f.name + ' · ' + new Date(f.createdTime).toLocaleString('id-ID')"></option></template>
+                  </select>
+                  <button @click="driveRestoreSelected()" :disabled="!driveSelectedId || driveBusy" class="btn btn-light !py-2 !px-2 !text-xs w-full disabled:opacity-50">Pulihkan dari Google Drive</button>
+                </div>
+                <p class="text-[10px] text-slate-400">Menyimpan maksimal 30 cadangan terbaru. Pemulihan meminta konfirmasi dan tidak menghapus cadangan lain.</p>
+              </div>
+
+              <div class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                <p class="text-xs font-bold text-slate-800 mb-2">Cadangan perangkat</p>
                 <div class="grid grid-cols-2 gap-2">
                   <button @click="exportJSON()" class="btn btn-navy !py-2 !px-2 text-xs">Simpan JSON</button>
                   <button @click="$refs.berkas.click()" class="btn btn-light !py-2 !px-2 text-xs">Muat JSON</button>
                   <input type="file" x-ref="berkas" accept=".json,application/json" class="hidden" @change="importJSON($event)">
                   <button @click="exportCSV()" class="btn btn-light !py-2 !px-2 text-xs col-span-2">Ekspor Excel (CSV)</button>
                 </div>
+              </div>
               </div>
             </div>
           </div>
@@ -477,12 +512,21 @@
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
-          <button @click="openPengirim()" class="btn btn-navy">+ Pengirim / Centengan</button>
+        <div class="card p-3 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Navigasi cepat</p>
+            <button @click="openPengirim()" class="btn btn-navy !py-1.5 !px-3 !text-xs">+ Pengirim</button>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <template x-for="p in dayPengirim()" :key="'nav-p-'+p.id">
+              <button @click="pilihNavigasi('pengirim-card-'+p.id)" :class="navAktif === 'pengirim-card-'+p.id ? 'border-sky-700 bg-sky-700 text-white ring-2 ring-sky-200 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-sky-400 hover:bg-sky-50'" class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition" x-text="p.nama"></button>
+            </template>
+            <button @click="pilihNavigasi('section-diluar')" :class="navAktif === 'section-diluar' ? 'border-amber-700 bg-amber-700 text-white ring-2 ring-amber-200 shadow-sm' : 'border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100'" class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition">Diluar</button>
+          </div>
         </div>
 
         <template x-for="(p, pi) in dayPengirim()" :key="p.id">
-          <div class="card overflow-hidden" :id="'pengirim-card-' + p.id">
+          <div class="card overflow-hidden scroll-mt-24" :id="'pengirim-card-' + p.id">
             <div class="px-6 py-4 text-white flex items-center justify-between gap-3" :style="{ background: p.jenis === 'Centengan' ? '#b45309' : warnaPengirimP(p) }">
               <div class="flex items-center gap-3 min-w-0">
                 <div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center font-bold" x-text="p.nama.charAt(0)"></div>
@@ -511,14 +555,14 @@
                     <thead><tr><th class="th w-12 text-center">No</th><th class="th">Barang</th><th class="th">Dus</th><th class="th">Qty</th><th class="th">Modal / kg</th><th class="th text-right">Aksi</th></tr></thead>
                     <tbody>
                       <template x-for="(b, i) in dayBarang(p)" :key="b.id">
-                        <tr class="hover:bg-slate-50">
+                        <tr @click="lompatKe('barang-section-'+b.id)" class="cursor-pointer hover:bg-sky-50/70 transition-colors" :title="'Klik untuk melihat transaksi '+b.nama">
                           <td class="td text-center text-xs text-slate-500" x-text="i + 1"></td>
-                          <td class="td font-semibold" x-text="b.nama"></td>
+                          <td class="td" x-text="b.nama"></td>
                           <td class="td" x-text="b.dus"></td>
                           <td class="td" x-text="b.qty"></td>
                           <td class="td" x-text="rp(b.modal)"></td>
                           <td class="td text-right whitespace-nowrap">
-                            <button @click="editBarang(b)" class="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block">Edit</button>
+                            <button @click.stop="editBarang(b)" class="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block">Edit</button>
                           </td>
                         </tr>
                       </template>
@@ -533,7 +577,7 @@
 
               <!-- pengecer per barang -->
               <template x-for="b in dayBarang(p)" :key="b.id">
-                <div class="overflow-hidden">
+                <div class="overflow-hidden scroll-mt-24" :id="'barang-section-' + b.id">
                   <div class="px-4 pt-3 pb-2 flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p class="font-bold text-slate-900" x-text="b.nama"></p>
@@ -595,7 +639,7 @@
           </div>
         </template>
 
-        <div id="section-diluar" class="card overflow-hidden">
+        <div id="section-diluar" class="card overflow-hidden scroll-mt-24">
           <div class="px-6 py-4 bg-amber-800 text-white flex items-center justify-between">
             <div>
               <p class="font-bold">Diluar</p>
@@ -1589,6 +1633,8 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "747476887362",
   appId: "1:747476887362:web:19d19e508fd7c003838adb"
 };
+const GOOGLE_DRIVE_CLIENT_ID = "747476887362-4mpjr3jdfi81e4lldspn5murtdnoj1st.apps.googleusercontent.com";
+const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 let fbAuth = null, fbDb = null;
 try {
   if (typeof firebase !== 'undefined') {
@@ -1649,6 +1695,7 @@ function app() {
   return {
     view: 'dashboard',
     currentDay: today(),
+    navAktif: '',
     pilihTanggal: today(),
     riwayat: [],
     backupDue: false,
@@ -1657,6 +1704,14 @@ function app() {
     siapSimpan: false,
     cloudUser: null,
     cloudStatus: '',
+    driveStatus: '',
+    driveConnected: false,
+    driveBusy: false,
+    driveFiles: [],
+    driveSelectedId: '',
+    _driveToken: '',
+    _driveTokenClient: null,
+    _driveFolderId: '',
     loginPopup: { open: false, msg: '' },
     _wasLoggedIn: false,
     _manualLogin: false,
@@ -1897,6 +1952,8 @@ function app() {
 
     // ===== daftar hari ini =====
     dayPengirim() { return this.pengirim.filter(p => p.hari === this.currentDay).sort((a, b) => (a.jenis === 'Centengan') - (b.jenis === 'Centengan')); },
+    pilihNavigasi(id) { this.navAktif = id; this.lompatKe(id); },
+    lompatKe(id) { this.$nextTick(() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); },
     dayBarang(p) { return this.barang.filter(b => b.hari === this.currentDay && b.pengirim === p.nama); },
     dayTrx(p, b) { return this.trx.filter(t => t.hari === this.currentDay && t.pengirim === p.nama && t.barang === b.nama); },
     dayDiluar() { return this.diluar.filter(x => x.hari === this.currentDay); },
@@ -3314,6 +3371,155 @@ function app() {
         }
       });
     },
+    async driveLoadGIS() {
+      if (window.google && google.accounts && google.accounts.oauth2) return;
+      if (!this._driveGISPromise) this._driveGISPromise = new Promise((resolve, reject) => {
+        const old = document.querySelector('script[data-google-identity="1"]');
+        if (old) { old.addEventListener('load', resolve, { once: true }); old.addEventListener('error', reject, { once: true }); return; }
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client'; script.async = true; script.defer = true; script.dataset.googleIdentity = '1';
+        script.onload = resolve; script.onerror = () => reject(new Error('Library Google Identity gagal dimuat. Periksa koneksi internet.'));
+        document.head.appendChild(script);
+      });
+      await this._driveGISPromise;
+      if (!(window.google && google.accounts && google.accounts.oauth2)) throw new Error('Google Identity Services tidak tersedia.');
+    },
+    async driveConnect() {
+      try {
+        this.driveStatus = 'Menghubungkan izin Google Drive...';
+        await this.driveLoadGIS();
+        await new Promise((resolve, reject) => {
+          this._driveTokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_DRIVE_CLIENT_ID,
+            scope: GOOGLE_DRIVE_SCOPE,
+            callback: (response) => {
+              if (response && response.access_token) {
+                this._driveToken = response.access_token;
+                this.driveConnected = true;
+                this.driveStatus = '✓ Google Drive terhubung. Menyiapkan folder backup...';
+                resolve();
+              } else reject(new Error((response && response.error_description) || (response && response.error) || 'Izin Google Drive tidak diberikan.'));
+            },
+            error_callback: (error) => reject(new Error((error && error.message) || 'Jendela izin Google Drive gagal dibuka.'))
+          });
+          this._driveTokenClient.requestAccessToken({ prompt: 'consent' });
+        });
+        await this.driveEnsureFolder();
+        this.driveStatus = '✓ Google Drive terhubung · folder ATS-TSURAYYA BACKUP siap.';
+        if (this.cloudStatus.includes('Tersinkron') || this.cloudStatus.includes('berhasil')) await this.driveMaybeAutoBackup();
+      } catch (e) {
+        this._driveToken = ''; this.driveConnected = false;
+        this.driveStatus = 'Gagal menghubungkan Drive: ' + (e.message || e);
+      }
+    },
+    async driveRequest(url, options = {}) {
+      if (!this._driveToken) throw new Error('Izin Google Drive belum aktif. Tekan Hubungkan Google Drive.');
+      const headers = Object.assign({}, options.headers || {}, { Authorization: 'Bearer ' + this._driveToken });
+      const response = await fetch(url, Object.assign({}, options, { headers }));
+      if (!response.ok) {
+        let detail = ''; try { const body = await response.json(); detail = body.error && body.error.message ? body.error.message : ''; } catch (_) {}
+        if (response.status === 401) { this._driveToken = ''; this.driveConnected = false; }
+        throw new Error('Google Drive (' + response.status + ')' + (detail ? ': ' + detail : '. Izin mungkin kedaluwarsa; hubungkan ulang Drive.'));
+      }
+      return response;
+    },
+    async driveEnsureFolder() {
+      if (this._driveFolderId) return this._driveFolderId;
+      this._driveFolderId = await dbGet('ats_drive_folder_id') || '';
+      if (this._driveFolderId) return this._driveFolderId;
+      const q = encodeURIComponent("name='ATS-TSURAYYA BACKUP' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+      const listRes = await this.driveRequest('https://www.googleapis.com/drive/v3/files?q=' + q + '&pageSize=10&fields=files(id,name)');
+      const list = await listRes.json();
+      let folder = (list.files || [])[0];
+      if (!folder) {
+        const createRes = await this.driveRequest('https://www.googleapis.com/drive/v3/files?fields=id,name', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'ATS-TSURAYYA BACKUP', mimeType: 'application/vnd.google-apps.folder' })
+        });
+        folder = await createRes.json();
+      }
+      if (!folder || !folder.id) throw new Error('Folder backup Google Drive gagal dibuat.');
+      this._driveFolderId = folder.id;
+      await dbSet('ats_drive_folder_id', folder.id);
+      return folder.id;
+    },
+    async driveListBackups(silent = false) {
+      const folderId = await this.driveEnsureFolder();
+      const q = encodeURIComponent("'" + folderId + "' in parents and trashed=false and name contains 'ATS-BACKUP-'");
+      const res = await this.driveRequest('https://www.googleapis.com/drive/v3/files?q=' + q + '&pageSize=100&orderBy=createdTime desc&fields=files(id,name,createdTime,size,mimeType)');
+      const data = await res.json();
+      this.driveFiles = data.files || [];
+      if (!this.driveSelectedId && this.driveFiles.length) this.driveSelectedId = this.driveFiles[0].id;
+      if (!silent) this.driveStatus = this.driveFiles.length + ' cadangan ditemukan di Google Drive.';
+      return this.driveFiles;
+    },
+    async driveUploadJson(json, name) {
+      const folderId = await this.driveEnsureFolder();
+      const metadata = { name, mimeType: 'application/json', parents: [folderId], appProperties: { atsTsurayyaBackup: 'true' } };
+      const init = await this.driveRequest('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name,createdTime,size', {
+        method: 'POST', headers: { 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Type': 'application/json' }, body: JSON.stringify(metadata)
+      });
+      const uploadUrl = init.headers.get('Location');
+      if (!uploadUrl) throw new Error('Google Drive tidak memberikan alamat upload.');
+      const uploaded = await this.driveRequest(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: json });
+      const file = await uploaded.json();
+      if (!file.id) throw new Error('Google Drive tidak mengembalikan ID file backup.');
+      const verify = await this.driveRequest('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(file.id) + '?alt=media');
+      const verifiedText = await verify.text();
+      if (verifiedText !== json) throw new Error('Verifikasi isi backup Google Drive tidak cocok. File lokal tetap dipertahankan.');
+      return file;
+    },
+    async drivePruneBackups() {
+      const files = await this.driveListBackups(true);
+      for (const old of files.slice(30)) {
+        await this.driveRequest('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(old.id), { method: 'DELETE' });
+      }
+      await this.driveListBackups(true);
+    },
+    async driveBackupNow() {
+      if (!this.driveConnected || !this._driveToken) { this.driveStatus = 'Hubungkan Google Drive terlebih dahulu.'; return; }
+      if (!this._localReady) { this.driveStatus = 'IndexedDB belum siap. Backup dibatalkan demi keamanan data.'; return; }
+      if (this.driveBusy) return;
+      this.driveBusy = true; this.driveStatus = 'Membuat dan memverifikasi backup Google Drive...';
+      try {
+        await this._saveQueue;
+        const state = JSON.parse(this.snapshotState());
+        const payload = JSON.stringify({ backupSchemaVersion: 2, exportedAt: new Date().toISOString(), ...state }, null, 2);
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const file = await this.driveUploadJson(payload, 'ATS-BACKUP-' + stamp + '.json');
+        const at = Date.now();
+        await dbSet('ats_drive_last_backup', at);
+        this.driveStatus = '✓ Backup Drive berhasil dan terverifikasi · ' + new Date(at).toLocaleString('id-ID');
+        await this.drivePruneBackups();
+        if (file && file.id) this.driveSelectedId = file.id;
+      } catch (e) { this.driveStatus = 'Backup Drive gagal: ' + (e.message || e); }
+      finally { this.driveBusy = false; }
+    },
+    async driveMaybeAutoBackup() {
+      if (!this.driveConnected || !this._driveToken || !this._localReady || this.driveBusy) return;
+      const last = Number(await dbGet('ats_drive_last_backup') || 0);
+      if (Date.now() - last < 24 * 60 * 60 * 1000) return;
+      await this.driveBackupNow();
+    },
+    async driveLoadBackups() {
+      if (!this.driveConnected || !this._driveToken) { this.driveStatus = 'Hubungkan Google Drive terlebih dahulu.'; return; }
+      this.driveBusy = true;
+      try { await this.driveListBackups(); }
+      catch (e) { this.driveStatus = 'Gagal membaca backup Drive: ' + (e.message || e); }
+      finally { this.driveBusy = false; }
+    },
+    async driveRestoreSelected() {
+      if (!this.driveSelectedId || !this.driveConnected || !this._driveToken) return;
+      this.driveBusy = true;
+      try {
+        const res = await this.driveRequest('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(this.driveSelectedId) + '?alt=media');
+        const raw = await res.text();
+        const data = JSON.parse(raw);
+        const checked = this.siapkanCadangan(data);
+        this.driveBusy = false;
+        this.ask(this.ringkasanCadangan(checked) + ' Sumber: Google Drive. Lanjutkan pemulihan?', () => this.terapkanCadangan(checked), 'Pulihkan dari Drive');
+      } catch (e) { this.driveBusy = false; this.driveStatus = 'Pemulihan Drive gagal: ' + (e.message || e) + '. Data aplikasi tidak diubah.'; }
+    },
     loginCloud() {
       if (!this._localReady) { this.cloudStatus = 'Penyimpanan lokal belum siap. Login/sinkronisasi cloud ditahan demi keamanan data.'; return; }
       if (!fbAuth) { this.cloudStatus = 'Firebase belum termuat, periksa koneksi'; return; }
@@ -3670,6 +3876,7 @@ function app() {
         this._cloudVersion = verifiedVersion; this._cloudJson = json; this._cloudConflict = false;
         await this.updateStorageInfo();
         this.cloudStatus = '✓ Tersinkron ke Cloud · ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        this.driveMaybeAutoBackup().catch(e => { this.driveStatus = 'Backup otomatis Drive tertunda: ' + (e.message || e); });
       } catch (err) {
         this._cloudConflict = true;
         this.cloudStatus = 'Gagal mengirim data lokal ke Cloud: ' + this.detailErrorCloud(err) + ' Data lokal tetap aman; coba sinkronkan lagi saat koneksi pulih.';
