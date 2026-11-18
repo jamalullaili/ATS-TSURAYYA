@@ -282,7 +282,9 @@
               <p x-show="!cloudUser && cloudStatus" x-cloak class="mt-1 text-[11px] text-rose-600 font-semibold" x-text="cloudStatus"></p>
               <div x-show="cloudUser" x-cloak class="space-y-1">
                 <p class="text-stone-600">Cloud: <span class="font-semibold" x-text="cloudUser"></span></p>
-                <p class="text-stone-400" x-text="cloudStatus"></p>
+                <p class="text-stone-600 font-semibold" x-text="cloudStatus"></p>
+                <button @click="ambilDariCloud()" class="btn btn-light !py-1 !px-2.5 !text-xs mt-1">Ambil Data dari Cloud</button>
+                <p class="text-[10px] text-stone-400">Sinkronisasi normal tetap dari Lokal ke Cloud. Tombol ini mengganti data lokal dengan data Cloud setelah konfirmasi.</p>
                 <button @click="ask('Yakin ingin keluar dari akun Google Cloud? Sinkronisasi otomatis akan berhenti sampai Anda masuk kembali.', () => logoutCloud(), 'Keluar')" class="text-rose-600 font-semibold">Keluar</button>
               </div>
             </div>
@@ -3482,101 +3484,101 @@ function app() {
       await this._saveQueue;
       const ref = fbDb.collection('ats').doc('data');
       const snap = await ref.get();
-      const localSavedAt = Number(await dbGet('ats_meta_local_saved') || 0);
-      let localState = this.siapkanIdCloud(JSON.parse(this.snapshotState()));
+      const localState = this.siapkanIdCloud(JSON.parse(this.snapshotState()));
       const localJson = this.cloudStableJson(localState);
       if (!snap.exists) {
-        this._cloudVersion = 0; this._cloudJson = ''; this._cloudConflict = false;
+        this.cloudStatus = 'Menyinkronkan data lokal ke Cloud...';
         const version = await this.tulisStateCloudTerpisah(localState, 0);
-        this._cloudVersion = version; this._cloudJson = localJson;
-        await dbSet(KEY, JSON.stringify(localState)); await dbSet('ats_meta_local_saved', version);
+        const verifySnap = await ref.get();
+        const verifyMeta = verifySnap.exists ? (verifySnap.data() || {}) : {};
+        const verified = await this.bacaStateCloudTerpisah(verifyMeta);
+        if (this.cloudStableJson(verified) !== localJson) throw new Error('Verifikasi data awal ke Cloud gagal. Data lokal tetap aman.');
+        this._cloudVersion = Number(verifyMeta.splitUpdatedAt || verifyMeta.updatedAt || version) || version;
+        this._cloudJson = localJson; this._cloudConflict = false;
+        await dbSet(KEY, JSON.stringify(localState));
+        await dbSet('ats_meta_local_saved', this._cloudVersion);
         this._lastSnapshot = JSON.stringify(localState);
-        this.cloudStatus = 'Data awal tersimpan ke cloud';
+        this.cloudStatus = '✓ Tersinkron ke Cloud · ' + new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
         return;
       }
-      let meta = snap.data() || {};
-      const legacyJson = typeof meta.json === 'string' ? meta.json : '';
-
-      // Migrasi satu kali dari dokumen lama. Salinan json lama tetap dipertahankan di ats/data.
+      const meta = snap.data() || {};
+      const cloudVersion = Number(meta.splitUpdatedAt || meta.updatedAt) || 0;
+      // Cloud lama (skema JSON tunggal) dimigrasikan dengan data lokal sebagai sumber utama.
       if (Number(meta.splitSchemaVersion || 0) < 1) {
-        if (!legacyJson) { this.cloudStatus = 'Data cloud lama tidak ditemukan. Data lokal tidak diubah.'; return; }
-        const legacyVersion = Number(meta.updatedAt) || 0;
-        let chosen;
-        if (legacyVersion > localSavedAt) chosen = this.siapkanIdCloud(JSON.parse(legacyJson));
-        else if (localSavedAt > legacyVersion) chosen = localState;
-        else if (this.cloudStableJson(this.siapkanIdCloud(JSON.parse(legacyJson))) === localJson) chosen = localState;
-        else {
-          this._cloudConflict = true;
-          this.cloudStatus = 'KONFLIK saat migrasi: data lokal dan cloud berbeda. Buat cadangan dan pilih data yang benar sebelum migrasi.';
-          return;
-        }
-        const version = await this.tulisStateCloudTerpisah(chosen, legacyVersion);
-        if (chosen !== localState) {
-          this.terapkanState(chosen);
-          const normalized = this.snapshotState();
-          await dbSet(KEY, normalized); this._lastSnapshot = normalized;
-        } else {
-          const normalized = JSON.stringify(chosen);
-          await dbSet(KEY, normalized); this._lastSnapshot = normalized;
-        }
-        await dbSet('ats_meta_local_saved', version);
-        this._cloudVersion = version; this._cloudJson = this.cloudStableJson(chosen); this._cloudConflict = false;
-        await this.updateStorageInfo();
-        this.cloudStatus = 'Migrasi berhasil: data lama dipisah menjadi dokumen cloud';
+        this.cloudStatus = 'Menyinkronkan data lokal ke Cloud...';
+        const version = await this.tulisStateCloudTerpisah(localState, cloudVersion);
+        const verifySnap = await ref.get();
+        const verifyMeta = verifySnap.exists ? (verifySnap.data() || {}) : {};
+        const verified = await this.bacaStateCloudTerpisah(verifyMeta);
+        if (this.cloudStableJson(verified) !== localJson) throw new Error('Verifikasi migrasi Cloud gagal. Data lokal tetap aman.');
+        this._cloudVersion = Number(verifyMeta.splitUpdatedAt || verifyMeta.updatedAt || version) || version;
+        this._cloudJson = localJson; this._cloudConflict = false;
+        await dbSet('ats_meta_local_saved', this._cloudVersion);
+        this.cloudStatus = '✓ Data lokal berhasil dimigrasikan dan tersinkron ke Cloud';
         return;
       }
-
       const cloudState = await this.bacaStateCloudTerpisah(meta);
       const cloudJson = this.cloudStableJson(cloudState);
-      const cloudVersion = Number(meta.splitUpdatedAt || meta.updatedAt) || 0;
       this._cloudVersion = cloudVersion; this._cloudJson = cloudJson;
       if (cloudJson === localJson) {
         this._cloudConflict = false;
-        await dbSet('ats_meta_local_saved', Math.max(localSavedAt, cloudVersion));
-        this.cloudStatus = 'Data sudah sinkron';
+        await dbSet('ats_meta_local_saved', Math.max(Number(await dbGet('ats_meta_local_saved') || 0), cloudVersion));
+        this.cloudStatus = '✓ Tersinkron ke Cloud · ' + new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
         return;
       }
-      if (cloudVersion > localSavedAt) {
-        this.terapkanState(cloudState);
-        const normalized = this.snapshotState();
-        await dbSet(KEY, normalized); await dbSet('ats_meta_local_saved', cloudVersion);
-        this._lastSnapshot = normalized; this._cloudJson = cloudJson; this._cloudVersion = cloudVersion;
-        this._cloudConflict = false; await this.updateStorageInfo();
-        this.cloudStatus = 'Data terbaru dimuat dari cloud';
-        return;
-      }
-      if (localSavedAt > cloudVersion) {
-        const version = await this.tulisStateCloudTerpisah(localState, cloudVersion);
-        this._cloudVersion = version; this._cloudJson = localJson; this._cloudConflict = false;
-        await dbSet('ats_meta_local_saved', version);
-        this.cloudStatus = 'Perubahan lokal tersimpan ke cloud';
-        return;
-      }
-      // Waktu versi sama tetapi isi berbeda: pengguna telah memilih data lokal
-      // sebagai sumber utama. Tulis lokal, baca ulang untuk verifikasi, baru
-      // hapus snapshot JSON lama (metadata dokumen ats/data tetap dipertahankan).
-      this._cloudConflict = true;
-      this.cloudStatus = 'Menyelaraskan data lokal yang telah dipilih...';
+      // Kebijakan utama: ketika login/sinkronisasi normal, data lokal selalu menang.
+      this.cloudStatus = 'Menyinkronkan perubahan lokal ke Cloud...';
       const version = await this.tulisStateCloudTerpisah(localState, cloudVersion);
-      const verifyMetaSnap = await ref.get();
-      const verifyMeta = verifyMetaSnap.exists ? (verifyMetaSnap.data() || {}) : {};
-      const verifiedState = await this.bacaStateCloudTerpisah(verifyMeta);
-      if (this.cloudStableJson(verifiedState) !== localJson) {
-        throw new Error('Verifikasi gagal. JSON lama tetap dipertahankan dan data lokal tidak dihapus.');
-      }
-      // Bersihkan hanya field json lama; jangan hapus dokumen ats/data atau metadata.
-      if (typeof verifyMeta.json === 'string') {
-        await ref.update({ json: firebase.firestore.FieldValue.delete() });
-      }
-      const normalizedLocal = JSON.stringify(localState);
-      await dbSet(KEY, normalizedLocal);
-      await dbSet('ats_meta_local_saved', version);
-      this._lastSnapshot = normalizedLocal;
-      this._cloudVersion = version;
-      this._cloudJson = localJson;
-      this._cloudConflict = false;
+      const verifySnap = await ref.get();
+      const verifyMeta = verifySnap.exists ? (verifySnap.data() || {}) : {};
+      const verified = await this.bacaStateCloudTerpisah(verifyMeta);
+      if (this.cloudStableJson(verified) !== localJson) throw new Error('Verifikasi gagal. Data lokal tidak diubah dan Cloud belum dinyatakan tersinkron.');
+      this._cloudVersion = Number(verifyMeta.splitUpdatedAt || verifyMeta.updatedAt || version) || version;
+      this._cloudJson = localJson; this._cloudConflict = false;
+      await dbSet(KEY, JSON.stringify(localState));
+      await dbSet('ats_meta_local_saved', this._cloudVersion);
+      this._lastSnapshot = JSON.stringify(localState);
       await this.updateStorageInfo();
-      this.cloudStatus = 'Konflik selesai: data lokal tersinkron, JSON lama dibersihkan';
+      this.cloudStatus = '✓ Tersinkron ke Cloud · ' + new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'});
+    },
+    async ambilDariCloud() {
+      if (!this.cloudUser || !fbDb) { this.cloudStatus = 'Masuk ke akun Google terlebih dahulu.'; return; }
+      if (!this._localReady) { this.cloudStatus = 'Penyimpanan lokal belum siap.'; return; }
+      this.ask('Data lokal akan diganti seluruhnya dengan data dari Cloud. Pastikan data lokal sudah memiliki cadangan JSON jika masih diperlukan. Lanjutkan?', async () => {
+        const sebelumnya = this.snapshotState();
+        clearTimeout(this._cloudTimer);
+        this.cloudStatus = 'Mengambil data dari Cloud...';
+        try {
+          await this._saveQueue;
+          const ref = fbDb.collection('ats').doc('data');
+          const snap = await ref.get();
+          if (!snap.exists) throw new Error('Data Cloud tidak ditemukan. Data lokal tidak diubah.');
+          const meta = snap.data() || {};
+          let cloudState;
+          if (Number(meta.splitSchemaVersion || 0) >= 1) cloudState = await this.bacaStateCloudTerpisah(meta);
+          else if (typeof meta.json === 'string') cloudState = JSON.parse(meta.json);
+          else throw new Error('Format data Cloud tidak dikenali. Data lokal tidak diubah.');
+          cloudState = this.siapkanIdCloud(cloudState);
+          this.validasiStateCloud(cloudState);
+          const version = Number(meta.splitUpdatedAt || meta.updatedAt) || Date.now();
+          this.terapkanState(cloudState);
+          const normalized = this.snapshotState();
+          await dbSet(KEY, normalized);
+          await dbSet('ats_meta_local_saved', version);
+          this._lastSnapshot = normalized;
+          this._pendingLocalSnapshot = '';
+          this._cloudVersion = version;
+          this._cloudJson = this.cloudStableJson(cloudState);
+          this._cloudConflict = false;
+          await this.updateStorageInfo();
+          this.cloudStatus = '✓ Data Cloud berhasil diambil dan disimpan ke perangkat';
+          alert('Berhasil. Data lokal sekarang mengikuti data Cloud.');
+        } catch (err) {
+          try { this.terapkanState(JSON.parse(sebelumnya)); this._lastSnapshot = sebelumnya; } catch (_) {}
+          this.cloudStatus = 'Gagal mengambil Cloud: ' + (err && err.message ? err.message : 'kesalahan tidak diketahui');
+          alert(this.cloudStatus + '. Data lokal sebelumnya dipertahankan.');
+        }
+      }, 'Ambil dari Cloud');
     },
     async dorongCloud() {
       if (!fbDb || !this.cloudUser || !this._localReady) return;
@@ -3586,13 +3588,20 @@ function app() {
       if (json === this._cloudJson) return;
       try {
         const version = await this.tulisStateCloudTerpisah(state, Number(this._cloudVersion || 0));
+        const ref = fbDb.collection('ats').doc('data');
+        const verifySnap = await ref.get();
+        const verifyMeta = verifySnap.exists ? (verifySnap.data() || {}) : {};
+        const verifiedState = await this.bacaStateCloudTerpisah(verifyMeta);
+        const stateJson = this.cloudStableJson(state);
+        if (this.cloudStableJson(verifiedState) !== stateJson) throw new Error('Verifikasi setelah pengiriman gagal. Data lokal tetap dipertahankan.');
+        const verifiedVersion = Number(verifyMeta.splitUpdatedAt || verifyMeta.updatedAt || version) || version;
         const normalized = JSON.stringify(state);
         await dbSet(KEY, normalized);
-        await dbSet('ats_meta_local_saved', version);
+        await dbSet('ats_meta_local_saved', verifiedVersion);
         this._lastSnapshot = normalized;
-        this._cloudVersion = version; this._cloudJson = this.cloudStableJson(state); this._cloudConflict = false;
+        this._cloudVersion = verifiedVersion; this._cloudJson = stateJson; this._cloudConflict = false;
         await this.updateStorageInfo();
-        this.cloudStatus = 'Tersimpan ke cloud · ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        this.cloudStatus = '✓ Tersinkron ke Cloud · ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
       } catch (err) {
         this._cloudConflict = true;
         this.cloudStatus = 'Cloud tidak ditimpa: ' + (err && err.message ? err.message : 'gagal memeriksa versi cloud');
@@ -3602,6 +3611,7 @@ function app() {
     dorongCloudNanti() {
       if (!this.cloudUser || !fbDb || !this.siapSimpan || !this._localReady) return;
       clearTimeout(this._cloudTimer);
+      this.cloudStatus = 'Perubahan lokal tersimpan · menunggu sinkronisasi Cloud...';
       this._cloudTimer = setTimeout(() => {
         this.dorongCloud().catch(() => { /* dorongCloud sudah menampilkan alasan kegagalan yang spesifik. */ });
       }, 2000);
@@ -3760,7 +3770,7 @@ function app() {
         this._cloudConflict = false;
         await this.updateStorageInfo();
         this.dorongCloudNanti();
-        alert('Cadangan berhasil divalidasi dan disimpan ke IndexedDB. Cloud akan disinkronkan setelahnya.');
+        alert('Cadangan berhasil dipulihkan ke penyimpanan lokal. Data lokal akan disinkronkan ke Cloud setelahnya.');
       } catch (err) {
         try { this.terapkanState(JSON.parse(previous)); this._lastSnapshot = previous; } catch (_) {}
         alert('Pemulihan dibatalkan: ' + (err && err.message ? err.message : 'gagal menyimpan ke IndexedDB') + '. Data sebelumnya dipertahankan.');
