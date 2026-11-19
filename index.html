@@ -642,6 +642,21 @@
 
       <!-- ===== PENJUALAN (CATATAN) ===== -->
       <section x-show="view === 'penjualan'" x-cloak class="space-y-6">
+      <!-- Kotak ringkas: nama yang belum bayar dan TU -->
+      <div x-data="{ belumExpanded: false }" class="space-y-2">
+        <button type="button" @click="belumExpanded = !belumExpanded" :aria-expanded="belumExpanded.toString()" class="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-sm flex items-center gap-3 text-left hover:border-slate-300 transition">
+          <span class="h-10 w-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-user-clock text-lg" aria-hidden="true"></i></span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-bold text-slate-900">Belum Bayar &amp; TU</span>
+          </span>
+          <span class="text-[10px] font-semibold text-slate-500 shrink-0" x-text="belumExpanded ? 'Tutup' : 'Lihat semua'"></span>
+          <i class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform" :class="belumExpanded ? 'rotate-180' : ''" aria-hidden="true"></i>
+        </button>
+        <div x-show="belumExpanded" x-cloak x-transition class="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+          <template x-for="x in tagihanList()" :key="x.nama">
+            <button type="button" @click="bayarDariBon(x.nama)" class="max-w-full truncate px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition" x-text="x.nama"></button>
+          </template>
+        </div>
 
         <!-- Banner Pemilih Tanggal Penjualan -->
         <div class="card p-4 bg-amber-50/70 border-amber-200 flex flex-wrap items-center justify-between gap-3">
@@ -745,8 +760,8 @@
                               <div class="flex items-center gap-2 whitespace-nowrap">
                                 <div x-show="hasBayar(t) && Number(t.bayar) > 0">
                                   <span class="text-sm font-semibold block leading-tight" x-text="rp(t.bayar)"></span>
-                                  <span x-show="t.tanggal && !isTU(t.status)" class="text-[10px] text-slate-500 block leading-tight mt-0.5" x-text="tgl(t.tanggal)"></span>
-                                  <span x-show="isTU(t.status) && t.tanggal" class="text-[10px] text-slate-500 block leading-tight mt-0.5" x-text="'TU · sisa ' + rp(sisaT(t)) + ' · ' + tgl(t.tanggal)"></span>
+                                  <span x-show="t.tanggal && !isTU(t.status) && !String(t.jenis || '').startsWith('Lapak')" class="text-[10px] text-slate-500 block leading-tight mt-0.5" x-text="tgl(t.tanggal)"></span>
+                                  <span x-show="isTU(t.status) && t.tanggal && !String(t.jenis || '').startsWith('Lapak')" class="text-[10px] text-slate-500 block leading-tight mt-0.5" x-text="'TU · sisa ' + rp(sisaT(t)) + ' · ' + tgl(t.tanggal)"></span>
                                   <span x-show="Number(t.potongan) > 0" class="text-[11px] font-medium text-emerald-700 block leading-tight mt-0.5" x-text="'Potongan ' + rp(t.potongan)"></span>
                                 </div>
                                 <button x-show="!String(t.jenis || '').startsWith('Lapak')" @click="openBayar('pengecer', t)" class="btn btn-navy !py-1 !px-3 !text-xs">+ Bayar</button>
@@ -1136,30 +1151,6 @@
           
           <!-- Rincian Editor Baris Bon (Compact & Ideal Layout) -->
           
-          <div x-show="nota.kepada && !nota.baru && !notaBelumLunas()" x-cloak>
-            <button @click="mulaiBonBaru()" class="btn btn-navy !text-xs">+ Buat bon baru untuk <span x-text="nota.kepada" class="ml-1"></span></button>
-          </div>
-          <div x-show="nota.baru" x-cloak class="space-y-2">
-            <template x-for="(r, i) in nota.rows" :key="i">
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold text-slate-400">#<span x-text="i + 1"></span></span>
-                  <button @click="nota.rows.splice(i, 1)" class="text-slate-400 hover:text-rose-600 text-base font-bold px-1" title="Hapus baris">&times;</button>
-                </div>
-                <div class="grid grid-cols-12 gap-2 items-center">
-                  <div class="col-span-6"><label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Barang</label><input type="text" x-model="r.desk" placeholder="Nama barang" class="inp !py-1 !px-2 !text-xs bg-white"></div>
-                  <div class="col-span-2"><label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5 text-center">Qty</label><input type="text" inputmode="decimal" :value="fmt(r.qty)" @input="r.qty = dg($event.target.value); $el.value = fmtInput($event.target.value)" class="inp !py-1 !px-1 text-center bg-white"></div>
-                  <div class="col-span-4"><label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5 text-right">Harga</label><input type="text" inputmode="decimal" :value="fmt(r.harga)" @input="r.harga = dg($event.target.value); $el.value = fmtInput($event.target.value)" class="inp !py-1 !px-2 !text-xs text-right bg-white"></div>
-                </div>
-              </div>
-            </template>
-            <div class="flex flex-wrap gap-2">
-              <button @click="tambahBarisBaru()" class="btn btn-light !text-xs">+ Tambah baris</button>
-              <button @click="simpanBonBaru()" class="btn btn-navy !text-xs">Simpan sebagai tagihan</button>
-              <button @click="window.print()" class="btn btn-light !text-xs">Cetak saja</button>
-            </div>
-          </div>
-
         </div>
         <div class="lg:col-span-12 min-w-0 w-full">
           <div x-show="nota.kepada && nota.rows.length > 0" class="no-print mb-3 space-y-2">
@@ -1394,9 +1385,17 @@
 
     <template x-if="modal.type === 'barang'">
       <div class="space-y-4">
-        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Nama barang</label><input type="text" x-model="modal.f.nama" placeholder="Contoh: Ori, Cmk, Pcu" class="inp"></div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama barang</label>
+          <div class="flex flex-wrap gap-1.5 mb-2">
+            <template x-for="b in ['Ori', 'Cmk', 'Rm', 'Tm', 'Spa']" :key="b">
+              <button type="button" @click="modal.f.nama = b" class="px-3 py-1 rounded-full text-xs font-semibold border transition" :class="modal.f.nama === b ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'" x-text="b"></button>
+            </template>
+          </div>
+          <input type="text" x-model="modal.f.nama" placeholder="Contoh: Ori, Cmk, Pcu" class="inp">
+        </div>
         <div class="grid grid-cols-2 gap-3">
-          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Dus</label><input type="text" x-model="modal.f.dus" class="inp"></div>
+          <div><label class="block text-xs font-semibold text-slate-600 mb-1">Dus</label><input type="text" inputmode="numeric" :value="fmt(modal.f.dus)" @input="modal.f.dus = dg($event.target.value); $el.value = fmtInput($event.target.value)" class="inp" placeholder="0"></div>
           <div><label class="block text-xs font-semibold text-slate-600 mb-1">Qty</label><input type="text" inputmode="decimal" :value="fmt(modal.f.qty)" @input="modal.f.qty = dg($event.target.value); $el.value = fmtInput($event.target.value)" placeholder="200" class="inp"></div>
         </div>
         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Modal per kg (Rp)</label><input type="text" inputmode="decimal" :value="fmt(modal.f.modal)" @input="modal.f.modal = dg($event.target.value); $el.value = fmtInput($event.target.value)" class="inp"></div>
@@ -2158,7 +2157,7 @@ function app() {
             .sort((a, b) => (a.hari || '').localeCompare(b.hari || '') || (a.id - b.id))
             .map(x => ({
               id: x.id, hari: x.hari, sisa: this.sisaD(x), status: this.isTU(x.status) ? 'TU' : 'Belum', bisa: true,
-              label: this.tgl(x.hari) + ' · ' + ((x.items || []).map(i => i.nama).filter(Boolean).join(', ') || 'Diluar')
+              label: '[Diluar] ' + this.tgl(x.hari) + ' · ' + ((x.items || []).map(i => i.nama).filter(Boolean).join(', ') || 'Diluar')
             }))
         };
       }
@@ -2175,7 +2174,14 @@ function app() {
           }))
       };
     },
+    punyaKeduaJenis(nama, kind) {
+      if (kind === 'pengecer') return this.trxNamaD(nama).some(x => !x.lunas && this.sisaD(x) > 0);
+      if (kind === 'diluar') return this.trxNama(nama).some(t => !t.lunas && !String(t.jenis || '').startsWith('Lapak') && this.sisaT(t) > 0);
+      return false;
+    },
     openBayar(kind, ref) {
+      const namaRef = kind === 'pengecer' ? ref.pengecer : (kind === 'diluar' ? ref.nama : null);
+      if (namaRef && this.punyaKeduaJenis(namaRef, kind)) { this.openBayarGabung(namaRef); return; }
       const info = this.bayarInfo(kind, ref);
       const pilih = {};
       info.items.forEach(i => { if (i.bisa !== false && i.sisa <= 0) pilih[i.id] = true; });
@@ -2289,6 +2295,7 @@ function app() {
       });
     },
     simpanBayar() {
+      if (this.modal.kind === 'gabung') { this.simpanBayarGabung(); return; }
       const m = this.modal, f = m.f;
       const st = this.bayarStatus();
       if (!st.ok) return;
@@ -2819,7 +2826,7 @@ function app() {
       this.pembayaran = Array.isArray(this.pembayaran) ? unikDenganId(this.pembayaran) : this.pembayaran;
       this.riwayat = unikDenganId(this.riwayat);
       this.migrasiPembayaran();
-      this.trx.forEach(t => { if (String(t.jenis || '').startsWith('Lapak')) { if (!this.hasBayar(t)) t.bayar = t.total; t.status = ''; t.tanggal = ''; } });
+      this.trx.forEach(t => { if (String(t.jenis || '').startsWith('Lapak')) { if (!this.hasBayar(t)) t.bayar = t.total; t.status = ''; t.tanggal = this.lapakTanggal(t); } });
       const namaP = [...new Set([...this.trx.filter(t => !String(t.jenis || '').startsWith('Lapak') && t.pengecer).map(t => t.pengecer), ...(this.pembayaran || []).filter(c => (c.kind || 'P') === 'P' && c.nama).map(c => c.nama)])];
       const namaD = [...new Set([...this.diluar.filter(x => x.nama).map(x => x.nama), ...(this.pembayaran || []).filter(c => c.kind === 'D' && c.nama).map(c => c.nama)])];
       if (!Array.isArray(this.pembayaranP)) {
@@ -2851,7 +2858,7 @@ function app() {
     },
 
     // ===== diluar =====
-    openDiluar() { this.modal = { open: true, type: 'diluar', title: 'Tambah Diluar', f: { nama: '', mode: 'rincian', nominal: '', items: [{ nama: '', berat: '', harga: 0 }] }, id: null, parent: null }; },
+    openDiluar() { this.modal = { open: true, type: 'diluar', title: 'Tambah Diluar', f: { nama: '', mode: 'rincian', nominal: '', items: [{ nama: '', berat: '', harga: 0 }, { nama: '', berat: '', harga: 0 }] }, id: null, parent: null }; },
     editDiluar(x) { this.modal = { open: true, type: 'diluar', title: 'Edit Diluar', f: { nama: x.nama, mode: x.mode === 'nominal' ? 'nominal' : 'rincian', nominal: x.nominal != null ? String(x.nominal) : '', items: (x.items || []).map(i => ({ ...i })) }, id: x.id, parent: x }; },
     delDiluar(x) {
       const nama = x.nama;
@@ -3208,16 +3215,80 @@ function app() {
       }
     },
     notaBelumLunas() { const d = this.notaAktifData(this.nota.kepada || ''); return d.hasHistory && !d.allLunas; },
-    mulaiBonBaru() { this.nota.baru = true; this.nota.rows = [{ tgl: this.currentDay, desk: '', qty: '', harga: 0, bayar: 0, status: '', bayarTgl: this.currentDay }]; },
-    tambahBarisBaru() { this.nota.rows.push({ tgl: this.currentDay, desk: '', qty: '', harga: 0, bayar: 0, status: '', bayarTgl: this.currentDay }); },
+    lapakTanggal(t) {
+      const base = t.hari || today();
+      if (String(t.jenis || '') !== 'Lapak II') return base;
+      const d = new Date(base + 'T00:00:00');
+      d.setDate(d.getDate() + 1);
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    },
     simpanBonBaru() {
       const nm = (this.nota.kepada || '').trim();
-      const items = this.nota.rows.filter(r => (r.desk || '').trim()).map(r => ({ nama: r.desk.trim(), berat: parseFloat(r.qty) || 0, harga: Number(r.harga) || 0 }));
-      if (!nm || items.length === 0) return;
-      this.diluar.push({ id: uid(), hari: this.currentDay, nama: nm, items: items, mode: 'rincian', nominal: 0, bayar: '', status: '', tanggal: '' });
+      const baris = [];
+      if (!nm || baris.length === 0) return;
+      const perTanggal = {};
+      baris.forEach(r => {
+        const tg = r.tgl || this.currentDay;
+        (perTanggal[tg] = perTanggal[tg] || []).push({ nama: r.desk.trim(), berat: parseFloat(r.qty) || 0, harga: Number(r.harga) || 0 });
+      });
+      Object.keys(perTanggal).sort().forEach(tg => {
+        this.diluar.push({ id: uid(), hari: tg, nama: nm, items: perTanggal[tg], mode: 'rincian', nominal: 0, bayar: '', status: '', tanggal: '' });
+      });
       this.alokasiNamaD(nm);
-      this.nota.baru = false;
       this.notaIsi();
+    },
+    openBayarGabung(nama) {
+      const urut = (a, b) => (a.hari || '').localeCompare(b.hari || '') || (a.rid - b.rid);
+      const itemP = this.trxNama(nama)
+        .filter(t => !t.lunas && !String(t.jenis || '').startsWith('Lapak') && this.sisaT(t) > 0)
+        .map(t => ({ id: 'P' + t.id, side: 'P', rid: t.id, hari: t.hari, sisa: this.sisaT(t), status: this.isTU(t.status) ? 'TU' : 'Belum', bisa: true,
+          label: this.tgl(t.hari) + ' · ' + (t.barang || '-') }));
+      const itemD = this.trxNamaD(nama)
+        .filter(x => !x.lunas && this.sisaD(x) > 0)
+        .map(x => ({ id: 'D' + x.id, side: 'D', rid: x.id, hari: x.hari, sisa: this.sisaD(x), status: this.isTU(x.status) ? 'TU' : 'Belum', bisa: true,
+          label: '[Diluar] ' + this.tgl(x.hari) + ' · ' + ((x.items || []).map(i => i.nama).filter(Boolean).join(', ') || 'Diluar') }));
+      const items = [...itemP, ...itemD].sort(urut);
+      this.searchModal.open = false;
+      this.modal = {
+        open: true, type: 'bayar', kind: 'gabung', ref: { jenis: '' }, nama, items, refId: null,
+        title: 'Pembayaran gabungan - ' + nama,
+        f: { tgl: today(), jumlah: '', metode: 'Cash', jenis: 'Lunas', potongan: false, pilih: {}, editId: null },
+        id: null, parent: { nama: nama, pengecer: nama }
+      };
+    },
+    simpanBayarGabung() {
+      const m = this.modal, f = m.f;
+      const st = this.bayarStatus();
+      if (!st.ok) return;
+      const j = this.dg(f.jumlah);
+      const jenisLunas = f.jenis === 'Lunas';
+      const bisa = m.items.filter(i => i.bisa !== false);
+      const pakai = (jenisLunas ? bisa.filter(i => f.pilih[i.id]) : bisa)
+        .slice().sort((a, b) => (a.hari || '').localeCompare(b.hari || '') || (a.rid - b.rid));
+      let sisaUang = j;
+      const bagian = {};
+      pakai.forEach(it => {
+        const b = Math.min(sisaUang, it.sisa);
+        if (b > 0) { bagian[it.id] = b; sisaUang -= b; }
+      });
+      if (!Array.isArray(this.pembayaran)) this.pembayaran = [];
+      const tgl = f.tgl || today();
+      const metode = f.metode || 'Cash';
+      const niat = jenisLunas ? 'Lunas' : 'TU';
+      const grupId = uid();
+      ['P', 'D'].forEach(side => {
+        const sub = pakai.filter(it => it.side === side && bagian[it.id] > 0);
+        const jumlah = sub.reduce((s, it) => s + bagian[it.id], 0);
+        if (jumlah <= 0) return;
+        this.pembayaran.push({
+          id: uid(), kind: side, nama: m.nama, tgl, jumlah, metode,
+          jenis: niat, niat, potongan: false, targetIds: sub.map(it => it.rid), grupId
+        });
+      });
+      this.alokasiNama(m.nama);
+      this.alokasiNamaD(m.nama);
+      this.catat(m.nama, 'Pembayaran gabungan ' + this.rp(j));
+      this.modal.open = false;
     },
     bayarDariBon(nama) {
       const urut = (a, b) => (a.hari || '').localeCompare(b.hari || '') || (a.id - b.id);
@@ -3310,7 +3381,7 @@ function app() {
           const t = this.trx.find(x => x.id === m.id);
           if (t) {
             const namaLama = String(t.jenis || '').startsWith('Lapak') ? '' : (t.pengecer || '').trim();
-            Object.assign(t, { jenis: f.jenis, pengecer: namaBaru, qty: f.qty, harga, total, bayar: lapak ? total : t.bayar, status: lapak ? '' : t.status, tanggal: lapak ? (t.tanggal || today()) : t.tanggal });
+            Object.assign(t, { jenis: f.jenis, pengecer: namaBaru, qty: f.qty, harga, total, bayar: lapak ? total : t.bayar, status: lapak ? '' : t.status, tanggal: lapak ? this.lapakTanggal({ hari: t.hari, jenis: f.jenis }) : t.tanggal });
             if (namaLama && this.kunciNama(namaLama) !== this.kunciNama(namaBaru)) {
               if (!lapak && namaBaru && this.trxNama(namaLama).length === 0) {
                 (this.pembayaran || []).forEach(c => { if ((c.kind || 'P') === 'P' && this.kunciNama(c.nama) === this.kunciNama(namaLama)) c.nama = namaBaru; });
@@ -3332,7 +3403,7 @@ function app() {
         const total = Number(f.total) || 0;
         const bayar = Number(f.jumlah) || 0;
         const metode = f.metode || 'Cash';
-        Object.assign(t, { qty: f.qty, harga, total, bayar, tanggal: f.tgl || today(), status: bayar <= 0 ? '' : (bayar >= total ? 'Lunas ' + metode : 'TU ' + metode) });
+        Object.assign(t, { qty: f.qty, harga, total, bayar, tanggal: this.lapakTanggal(t), status: bayar <= 0 ? '' : (bayar >= total ? 'Lunas ' + metode : 'TU ' + metode) });
       } else if (m.type === 'diluar') {
         if (!f.nama) return;
         const namaBaru = f.nama.trim();
