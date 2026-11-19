@@ -653,7 +653,7 @@
           <i class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform" :class="belumExpanded ? 'rotate-180' : ''" aria-hidden="true"></i>
         </button>
         <div x-show="belumExpanded" x-cloak x-transition class="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-3">
-          <template x-for="x in tagihanList()" :key="x.nama">
+          <template x-for="x in tagihanListHari()" :key="x.nama">
             <button type="button" @click="bayarDariBon(x.nama)" class="max-w-full truncate px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition" x-text="x.nama"></button>
           </template>
         </div>
@@ -3132,6 +3132,43 @@ function app() {
         const m = pastikan(x.nama);
         m.jumlah += sisa; m.dil++;
       });
+      return Object.values(map).map(m => {
+        const bagian = [];
+        if (m.trx) bagian.push(m.trx + ' transaksi');
+        if (m.dil) bagian.push(m.dil + ' diluar');
+        m.keterangan = bagian.join(' & ');
+        return m;
+      }).sort((a, b) => b.jumlah - a.jumlah);
+    },
+    // Daftar Belum Bayar & TU khusus tanggal yang sedang dibuka di menu Penjualan.
+    // Rekap keseluruhan tagihan (tagihanList) tetap dipakai oleh menu Bon.
+    tagihanListHari() {
+      const map = {};
+      const pastikan = (nama) => {
+        const label = (nama || '-').trim();
+        const k = label.toLowerCase();
+        if (!map[k]) map[k] = { nama: label, jumlah: 0, trx: 0, dil: 0, keterangan: '' };
+        return map[k];
+      };
+
+      this.trx.forEach(t => {
+        if (t.hari !== this.currentDay || String(t.jenis || '').startsWith('Lapak')) return;
+        const sisa = this.sisaT(t);
+        if (sisa <= 0) return;
+        const m = pastikan(t.pengecer);
+        m.jumlah += sisa;
+        m.trx++;
+      });
+
+      this.diluar.forEach(x => {
+        if (x.hari !== this.currentDay) return;
+        const sisa = this.sisaD(x);
+        if (sisa <= 0) return;
+        const m = pastikan(x.nama);
+        m.jumlah += sisa;
+        m.dil++;
+      });
+
       return Object.values(map).map(m => {
         const bagian = [];
         if (m.trx) bagian.push(m.trx + ' transaksi');
