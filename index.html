@@ -933,7 +933,62 @@
           </div>
           <p class="text-sm text-slate-500" x-text="tagihanList().length + ' pihak belum lunas'"></p>
         </div>
-        <div class="overflow-hidden rounded-2xl">
+        <div class="flex flex-wrap items-center gap-2 no-print">
+          <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1">
+            <button @click="bonMode = 'orang'" :class="bonMode === 'orang' ? 'bg-stone-900 text-white' : 'text-slate-600 hover:bg-slate-100'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition">Per orang</button>
+            <button @click="bonMode = 'tanggal'" :class="bonMode === 'tanggal' ? 'bg-stone-900 text-white' : 'text-slate-600 hover:bg-slate-100'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition">Per tanggal</button>
+          </div>
+          <div x-show="bonMode === 'tanggal'" x-cloak class="flex flex-wrap items-center gap-2">
+            <select x-model="bonUrut" class="inp !w-auto !py-1.5 !text-xs">
+              <option value="lama">Tanggal terlama dulu</option>
+              <option value="baru">Tanggal terbaru dulu</option>
+            </select>
+            <button type="button" @click="bukaSemuaBon(true)" class="btn btn-light !py-1.5 !px-2.5 !text-xs">Buka semua</button>
+            <button type="button" @click="bukaSemuaBon(false)" class="btn btn-light !py-1.5 !px-2.5 !text-xs">Tutup semua</button>
+          </div>
+        </div>
+
+        <!-- Tampilan per tanggal: tiap tanggal dengan daftar yang belum bayar -->
+        <div x-show="bonMode === 'tanggal'" x-cloak class="space-y-4">
+          <template x-for="g in tagihanPerTanggal()" :key="g.hari">
+            <div class="card overflow-hidden">
+              <button type="button" @click="bonBuka[g.hari] = !bonBuka[g.hari]" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left transition">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-slate-500 text-xs transition-transform duration-200 inline-block" :class="bonBuka[g.hari] ? 'rotate-90' : ''">▶</span>
+                  <div class="min-w-0">
+                    <p class="font-bold text-slate-900 text-sm" x-text="tgl(g.hari)"></p>
+                    <p class="text-xs text-slate-500" x-text="g.items.length + ' pihak belum bayar'"></p>
+                  </div>
+                </div>
+                <p class="font-extrabold text-rose-700 text-base shrink-0" x-text="rp(g.total)"></p>
+              </button>
+              <div x-show="bonBuka[g.hari]" x-cloak class="divide-y divide-slate-100 border-t border-slate-200">
+                <template x-for="it in g.items" :key="it.nama + it.kat">
+                  <div class="px-4 py-2.5 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="font-bold text-slate-900 text-sm" x-text="it.nama"></span>
+                        <span class="badge bg-stone-100 text-stone-700" x-text="it.kat"></span>
+                        <span x-show="it.tu" x-cloak class="badge bg-orange-100 text-orange-800">TU</span>
+                      </div>
+                      <div x-show="it.detail" class="text-xs text-slate-500 mt-0.5 truncate" x-text="it.detail"></div>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <div class="font-extrabold text-rose-700 text-sm" x-text="rp(it.jumlah)"></div>
+                      <div class="flex justify-end gap-1.5 mt-1">
+                        <button @click="bayarDariBon(it.nama)" class="btn btn-navy !py-1 !px-2.5 !text-xs">Bayar</button>
+                        <button @click="bukaNota(it.nama)" class="btn btn-navy !py-1 !px-2.5 !text-xs">✉ Cetak Bon</button>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+          <div x-show="tagihanPerTanggal().length === 0" class="card p-6 text-center text-slate-400 italic text-sm">Tidak ada catatan belum bayar.</div>
+        </div>
+
+        <div x-show="bonMode === 'orang'" x-cloak class="overflow-hidden rounded-2xl">
             <table class="w-full [&_td]:!border-0 [&_th]:!border-0 [&_tfoot]:!border-0 border-separate border-spacing-y-1">
             <thead><tr><th class="th w-12 text-center">No</th><th class="th">Nama & Kategori</th><th class="th text-right">Belum Bayar</th></tr></thead>
             <tbody>
@@ -1740,6 +1795,7 @@
     <div x-show="modal.type !== 'setor' && modal.type !== 'bayar'" class="flex justify-end gap-2 pt-2 border-t border-slate-100">
       <button x-show="((modal.type === 'barang' || modal.type === 'trx' || modal.type === 'nota' || modal.type === 'diluar') && modal.id) || (modal.type === 'setor' && modal.f && modal.f.editId)" @click="hapusDariModal()" class="btn btn-light !text-rose-600 mr-auto">Hapus</button>
                 <button @click="modal.open = false" class="btn btn-light" x-text="modal.type === 'cicilan' || modal.type === 'setor' ? 'Tutup' : 'Batal'"></button>
+      <button x-show="(modal.type === 'barang' || modal.type === 'trx' || modal.type === 'diluar') && !modal.id" @click="saveModalLanjut()" class="btn btn-soft">Simpan &amp; tambah lagi</button>
       <button x-show="modal.type !== 'cicilan' && modal.type !== 'setor'" @click="saveModal()" class="btn btn-navy">Simpan</button>
     </div>
   </div>
@@ -1839,6 +1895,9 @@ function app() {
     currentDay: today(),
     navAktif: '',
     pilihTanggal: today(),
+    bonMode: 'orang',
+    bonUrut: 'lama',
+    bonBuka: {},
     riwayat: [],
     backupDue: false,
     anakBuah: [], makanDays: [], absenMakan: [], bayarMakan: [],
@@ -2219,6 +2278,7 @@ function app() {
     },
     editBayarModal(r) {
       const m = this.modal;
+      if (m.kind === 'gabung') { this.editBayarGabung(r); return; }
       const items = this.bayarInfoTanpa(r.id);
       m.items = items;
       const pilih = {};
@@ -2235,8 +2295,34 @@ function app() {
       };
       m.title = 'Edit pembayaran - ' + m.nama;
     },
+    editBayarGabung(r) {
+      const m = this.modal;
+      // Satu pembayaran gabungan bisa berisi beberapa catatan (P & D) dengan grupId yang sama
+      const grup = (this.pembayaran || []).filter(c => r.grupId ? c.grupId === r.grupId : c.id === r.id);
+      const total = grup.reduce((s, c) => s + (Number(c.jumlah) || 0), 0);
+      const pilih = {};
+      grup.forEach(c => (c.targetIds || []).forEach(id => { pilih[(c.kind || 'P') + id] = true; }));
+      // Hitung daftar tagihan seolah grup ini belum ada, supaya sisa-nya benar
+      const sebelum = this.pembayaran || [];
+      this.pembayaran = sebelum.filter(c => !grup.includes(c));
+      this.alokasiNama(m.nama); this.alokasiNamaD(m.nama);
+      this.openBayarGabung(m.nama);
+      this.pembayaran = sebelum;
+      this.alokasiNama(m.nama); this.alokasiNamaD(m.nama);
+      const baru = this.modal;
+      const metodeRaw = r.metode || r.ket || 'Cash';
+      const niat = r.jenis === 'Lunas' ? 'Lunas' : 'TU';
+      baru.f = {
+        editId: r.id, editIds: grup.map(c => c.id),
+        tgl: r.tanggal || r.tgl || today(), jumlah: String(total),
+        metode: metodeRaw === 'TF' ? 'Tf' : metodeRaw, jenis: niat,
+        potongan: !!r.potongan, pilih: niat === 'Lunas' ? pilih : {}
+      };
+      baru.title = 'Edit pembayaran - ' + m.nama;
+    },
     batalEditBayar() {
       const m = this.modal;
+      if (m.kind === 'gabung') { this.openBayarGabung(m.nama); return; }
       m.items = this.bayarInfo(m.kind, m.ref).items;
       m.f = { tgl: today(), jumlah: '', metode: 'Cash', jenis: 'Lunas', potongan: false, pilih: {}, editId: null };
       m.title = 'Pembayaran - ' + m.nama;
@@ -2267,6 +2353,10 @@ function app() {
     },
     riwayatBayarModal() {
       const m = this.modal;
+      if (m.kind === 'gabung') {
+        return [...this.pembayaranNama(m.nama, 'P'), ...this.pembayaranNama(m.nama, 'D')]
+          .sort((a, b) => (b.tgl || '').localeCompare(a.tgl || '') || (String(b.id) < String(a.id) ? -1 : 1));
+      }
       const relevan = (c, t) => (c.jenis === 'Lunas')
         ? t.lunasPay === c
         : ((t.aktifs || []).includes(c) || (!!t.lunas && (t.siklus || []).includes(c)));
@@ -2286,6 +2376,16 @@ function app() {
     },
     hapusBayarModal(r) {
       const kind = this.modal.kind, ref = this.modal.ref;
+      if (kind === 'gabung') {
+        const nama = this.modal.nama;
+        this.ask('Hapus pembayaran ' + this.rp(r.jumlah) + '?', () => {
+          this.hapusPembayaran(r.id);
+          this.alokasiNama(nama);
+          this.alokasiNamaD(nama);
+          this.openBayarGabung(nama);
+        });
+        return;
+      }
       this.ask('Hapus pembayaran ' + this.rp(r.jumlah) + '?', () => {
         if (kind === 'nota') this.hapusPembayaranP(r.id);
         else this.hapusPembayaran(r.id);
@@ -3140,6 +3240,45 @@ function app() {
         return m;
       }).sort((a, b) => b.jumlah - a.jumlah);
     },
+    bukaSemuaBon(buka) {
+      this.tagihanPerTanggal().forEach(g => { this.bonBuka[g.hari] = buka; });
+    },
+    // Belum bayar dikelompokkan per tanggal (hari transaksi), lalu per nama di dalamnya.
+    tagihanPerTanggal() {
+      const hari = {};
+      const tambah = (h, nama, jumlah, kat, detail, tu) => {
+        if (!h) h = '-';
+        const g = hari[h] = hari[h] || { hari: h, total: 0, peta: {} };
+        const k = (nama || '-').trim().toLowerCase();
+        const it = g.peta[k] = g.peta[k] || { nama: (nama || '-').trim(), jumlah: 0, kat: new Set(), detail: [], tu: false };
+        it.jumlah += jumlah; it.kat.add(kat);
+        if (detail) it.detail.push(detail);
+        if (tu) it.tu = true;
+        g.total += jumlah;
+      };
+      this.trx.forEach(t => {
+        if (String(t.jenis || '').startsWith('Lapak')) return;
+        const s = this.sisaT(t);
+        if (s <= 0) return;
+        tambah(t.hari, t.pengecer, s, 'Pengecer', t.barang || '', this.isTU(t.status));
+      });
+      this.diluar.forEach(x => {
+        const s = this.sisaD(x);
+        if (s <= 0) return;
+        tambah(x.hari, x.nama, s, 'Diluar', (x.items || []).map(i => i.nama).filter(Boolean).join(', '), this.isTU(x.status));
+      });
+      const urut = this.bonUrut === 'baru' ? (a, b) => b.localeCompare(a) : (a, b) => a.localeCompare(b);
+      return Object.keys(hari).sort(urut).map(h => {
+        const g = hari[h];
+        return {
+          hari: h, total: g.total,
+          items: Object.values(g.peta).map(it => ({
+            nama: it.nama, jumlah: it.jumlah, kat: [...it.kat].join(' & '),
+            detail: [...new Set(it.detail.filter(Boolean))].join(', '), tu: it.tu
+          })).sort((a, b) => b.jumlah - a.jumlah)
+        };
+      });
+    },
     // Daftar Belum Bayar & TU khusus tanggal yang sedang dibuka di menu Penjualan.
     // Rekap keseluruhan tagihan (tagihanList) tetap dipakai oleh menu Bon.
     tagihanListHari() {
@@ -3288,7 +3427,7 @@ function app() {
       this.searchModal.open = false;
       this.modal = {
         open: true, type: 'bayar', kind: 'gabung', ref: { jenis: '' }, nama, items, refId: null,
-        title: 'Pembayaran gabungan - ' + nama,
+        title: 'Pembayaran - ' + nama,
         f: { tgl: today(), jumlah: '', metode: 'Cash', jenis: 'Lunas', potongan: false, pilih: {}, editId: null },
         id: null, parent: { nama: nama, pengecer: nama }
       };
@@ -3297,6 +3436,7 @@ function app() {
       const m = this.modal, f = m.f;
       const st = this.bayarStatus();
       if (!st.ok) return;
+      if (f.editIds) this.pembayaran = (this.pembayaran || []).filter(c => !f.editIds.includes(c.id));
       const j = this.dg(f.jumlah);
       const jenisLunas = f.jenis === 'Lunas';
       const bisa = m.items.filter(i => i.bisa !== false);
@@ -3324,7 +3464,7 @@ function app() {
       });
       this.alokasiNama(m.nama);
       this.alokasiNamaD(m.nama);
-      this.catat(m.nama, 'Pembayaran gabungan ' + this.rp(j));
+      this.catat(m.nama, 'Pembayaran ' + this.rp(j));
       this.modal.open = false;
     },
     bayarDariBon(nama) {
@@ -3467,6 +3607,16 @@ function app() {
         }
       }
       this.modal.open = false;
+    },
+
+    saveModalLanjut() {
+      const m = this.modal;
+      this.saveModal();
+      if (this.modal.open) return; // validasi gagal: form tetap terbuka dengan isian
+      if (m.id) return;
+      if (m.type === 'barang') this.openBarang(m.parent);
+      else if (m.type === 'trx') this.openTrx(m.parent.p, m.parent.b);
+      else if (m.type === 'diluar') this.openDiluar();
     },
 
     // ===== UANG MAKAN =====
