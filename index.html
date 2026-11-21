@@ -1979,6 +1979,7 @@ function app() {
           this._localSaveTimer = setTimeout(() => this.simpanLokalTertunda(), 300);
         });
       this.initDB().then(ok => { if (ok) this.initCloud(); });
+      this.driveHandleRedirect();
       if (location.hash) { const h = location.hash.slice(1); if (this.menu.some(m => m.id === h)) this.view = h; }
 
     },
@@ -3792,164 +3793,143 @@ function app() {
         }
       });
     },
-    async driveLoadGIS() {
-      if (window.google && google.accounts && google.accounts.oauth2) return;
-      if (!this._driveGISPromise) this._driveGISPromise = new Promise((resolve, reject) => {
-        const old = document.querySelector('script[data-google-identity="1"]');
-        if (old) { old.addEventListener('load', resolve, { once: true }); old.addEventListener('error', reject, { once: true }); return; }
-        const script = document.createElement('script');
-        script.src = 'https://accounts.google.com/gsi/client'; script.async = true; script.defer = true; script.dataset.googleIdentity = '1';
-        script.onload = resolve; script.onerror = () => reject(new Error('Library Google Identity gagal dimuat. Periksa koneksi internet.'));
-        document.head.appendChild(script);
+    // ===== GOOGLE DRIVE (versi ulang: redirect, tanpa popup) =====
+    driveConnect() {
+      this.driveStatus = 'Membuka halaman izin Google Drive...';
+      const params = new URLSearchParams({
+        client_id: GOOGLE_DRIVE_CLIENT_ID,
+        redirect_uri: location.origin + location.pathname,
+        response_type: 'token',
+        scope: GOOGLE_DRIVE_SCOPE,
+        prompt: 'select_account consent',
+        include_granted_scopes: 'true'
       });
-      await this._driveGISPromise;
-      if (!(window.google && google.accounts && google.accounts.oauth2)) throw new Error('Google Identity Services tidak tersedia.');
+      window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
     },
-    async driveConnect() {
-      try {
-        this.driveStatus = 'Membuka jendela izin Google Drive...';
-        await this.driveLoadGIS();
-        await new Promise((resolve, reject) => {
-          const batas = setTimeout(() => reject(new Error(
-            'Tidak ada respons dari Google dalam 60 detik. Izinkan pop-up untuk situs ini dan pastikan domain terdaftar di Google Cloud.'
-          )), 60000);
-          this._driveTokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_DRIVE_CLIENT_ID,
-            scope: GOOGLE_DRIVE_SCOPE,
-            callback: (response) => {
-              clearTimeout(batas);
-              if (response && response.access_token) {
-                this._driveToken = response.access_token;
-                this.driveConnected = true;
-                this.driveStatus = '✓ Google Drive terhubung. Menyiapkan folder backup...';
-                resolve();
-              } else {
-                reject(new Error((response && (response.error_description || response.error)) || 'Izin Google Drive tidak diberikan.'));
-              }
-            },
-            error_callback: (error) => {
-              clearTimeout(batas);
-              const tipe = error && error.type ? error.type : '';
-              reject(new Error(tipe === 'popup_closed' ? 'Jendela izin ditutup sebelum selesai.' : ((error && error.message) || 'Jendela izin Google Drive gagal dibuka.')));
-            }
-          });
-          this._driveTokenClient.requestAccessToken({ prompt: 'consent' });
-        });
-        await this.driveEnsureFolder();
-        this.driveStatus = '✓ Google Drive terhubung · folder ATS-TSURAYYA BACKUP siap.';
-        if (this.cloudStatus.includes('Tersinkron') || this.cloudStatus.includes('berhasil')) await this.driveMaybeAutoBackup();
-      } catch (e) {
-        this._driveToken = ''; this.driveConnected = false;
-        this.driveStatus = 'Gagal menghubungkan Drive: ' + (e.message || e);
-      }
+    driveHandleRedirect() {
+      const h = new URLSearchParams((location.hash || '').slice(1));
+      if (!h.has('access_token') && !h.has('error')) return;
+      history.replaceState(null, '', location.pathname + location.search);
+      if (h.has('error')) { this.driveGagal(new Error(h.get('error_description') || h.get('error'))); return; }
+      this._driveToken = h.get('access_token');
+      this.driveConnected = true;
+      this.driveStatus = 'Menyiapkan folder backup...';
+      this.driveEnsureFolder()
+        .then(() => { this.driveStatus = '✓ Google Drive terhubung · folder ATS-TSURAYYA BACKUP siap.'; return this.driveListBackups(); })
+        .catch(e => this.driveGagal(e));
+    },
+    driveGagal(e) {
+      this._driveToken = ''; this.driveConnected = false;
+      this.driveStatus = 'Gagal: ' + ((e && e.message) || e);
     },
     async driveRequest(url, options = {}) {
-      if (!this._driveToken) throw new Error('Izin Google Drive belum aktif. Tekan Hubungkan Google Drive.');
+      if (!this._driveToken) throw new Error('Belum terhubung ke Google Drive.');
       const headers = Object.assign({}, options.headers || {}, { Authorization: 'Bearer ' + this._driveToken });
-      const response = await fetch(url, Object.assign({}, options, { headers }));
-      if (!response.ok) {
-        let detail = ''; try { const body = await response.json(); detail = body.error && body.error.message ? body.error.message : ''; } catch (_) {}
-        if (response.status === 401) { this._driveToken = ''; this.driveConnected = false; }
-        throw new Error('Google Drive (' + response.status + ')' + (detail ? ': ' + detail : '. Izin mungkin kedaluwarsa; hubungkan ulang Drive.'));
+      const res = await fetch(url, Object.assign({}, options, { headers }));
+      if (!res.ok) {
+        let detail = ''; try { detail = (await res.json()).error.message; } catch (_) {}
+        if (res.status === 401) { this._driveToken = ''; this.driveConnected = false; }
+        throw new Error('Drive ' + res.status + (detail ? ': ' + detail : '. Tekan Hubungkan Google Drive lagi.'));
       }
-      return response;
+      return res;
     },
     async driveEnsureFolder() {
       if (this._driveFolderId) return this._driveFolderId;
-      this._driveFolderId = await dbGet('ats_drive_folder_id') || '';
-      if (this._driveFolderId) return this._driveFolderId;
       const q = encodeURIComponent("name='ATS-TSURAYYA BACKUP' and mimeType='application/vnd.google-apps.folder' and trashed=false");
-      const listRes = await this.driveRequest('https://www.googleapis.com/drive/v3/files?q=' + q + '&pageSize=10&fields=files(id,name)');
-      const list = await listRes.json();
+      const list = await (await this.driveRequest('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)')).json();
       let folder = (list.files || [])[0];
       if (!folder) {
-        const createRes = await this.driveRequest('https://www.googleapis.com/drive/v3/files?fields=id,name', {
+        folder = await (await this.driveRequest('https://www.googleapis.com/drive/v3/files?fields=id', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: 'ATS-TSURAYYA BACKUP', mimeType: 'application/vnd.google-apps.folder' })
-        });
-        folder = await createRes.json();
+        })).json();
       }
-      if (!folder || !folder.id) throw new Error('Folder backup Google Drive gagal dibuat.');
+      if (!folder || !folder.id) throw new Error('folder backup gagal dibuat');
       this._driveFolderId = folder.id;
-      await dbSet('ats_drive_folder_id', folder.id);
       return folder.id;
     },
-    async driveListBackups(silent = false) {
+    async driveListBackups() {
       const folderId = await this.driveEnsureFolder();
-      const q = encodeURIComponent("'" + folderId + "' in parents and trashed=false and name contains 'ATS-BACKUP-'");
-      const res = await this.driveRequest('https://www.googleapis.com/drive/v3/files?q=' + q + '&pageSize=100&orderBy=createdTime desc&fields=files(id,name,createdTime,size,mimeType)');
-      const data = await res.json();
+      const q = encodeURIComponent("'" + folderId + "' in parents and trashed=false");
+      const data = await (await this.driveRequest('https://www.googleapis.com/drive/v3/files?q=' + q + '&pageSize=100&orderBy=createdTime desc&fields=files(id,name,createdTime)')).json();
       this.driveFiles = data.files || [];
       if (!this.driveSelectedId && this.driveFiles.length) this.driveSelectedId = this.driveFiles[0].id;
-      if (!silent) this.driveStatus = this.driveFiles.length + ' cadangan ditemukan di Google Drive.';
       return this.driveFiles;
     },
     async driveUploadJson(json, name) {
       const folderId = await this.driveEnsureFolder();
-      const metadata = { name, mimeType: 'application/json', parents: [folderId], appProperties: { atsTsurayyaBackup: 'true' } };
-      const init = await this.driveRequest('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name,createdTime,size', {
-        method: 'POST', headers: { 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Type': 'application/json' }, body: JSON.stringify(metadata)
+      const boundary = 'atsbackup' + Date.now();
+      const meta = JSON.stringify({ name, parents: [folderId], mimeType: 'application/json' });
+      const body = '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + meta +
+        '\r\n--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + json + '\r\n--' + boundary + '--';
+      const res = await this.driveRequest('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name', {
+        method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + boundary }, body
       });
-      const uploadUrl = init.headers.get('Location');
-      if (!uploadUrl) throw new Error('Google Drive tidak memberikan alamat upload.');
-      const uploaded = await this.driveRequest(uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: json });
-      const file = await uploaded.json();
-      if (!file.id) throw new Error('Google Drive tidak mengembalikan ID file backup.');
-      const verify = await this.driveRequest('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(file.id) + '?alt=media');
-      const verifiedText = await verify.text();
-      if (verifiedText !== json) throw new Error('Verifikasi isi backup Google Drive tidak cocok. File lokal tetap dipertahankan.');
+      const file = await res.json();
+      if (!file.id) throw new Error('Drive tidak mengembalikan ID file');
+      // Verifikasi: isi di Drive harus sama dengan yang dikirim
+      const verifyText = await (await this.driveRequest('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(file.id) + '?alt=media')).text();
+      if (verifyText !== json) throw new Error('verifikasi isi backup tidak cocok');
       return file;
     },
     async drivePruneBackups() {
-      const files = await this.driveListBackups(true);
+      const files = await this.driveListBackups();
       for (const old of files.slice(30)) {
         await this.driveRequest('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(old.id), { method: 'DELETE' });
       }
-      await this.driveListBackups(true);
+      await this.driveListBackups();
     },
     async driveBackupNow() {
-      if (!this.driveConnected || !this._driveToken) { this.driveStatus = 'Hubungkan Google Drive terlebih dahulu.'; return; }
-      if (!this._localReady) { this.driveStatus = 'IndexedDB belum siap. Backup dibatalkan demi keamanan data.'; return; }
+      if (!this.driveConnected) { this.driveStatus = 'Hubungkan Google Drive dulu.'; return; }
+      if (!this._localReady) { this.driveStatus = 'Penyimpanan lokal belum siap. Backup dibatalkan.'; return; }
       if (this.driveBusy) return;
-      this.driveBusy = true; this.driveStatus = 'Membuat dan memverifikasi backup Google Drive...';
+      this.driveBusy = true;
+      this.driveStatus = 'Membuat backup ke Google Drive...';
       try {
         await this._saveQueue;
         const state = JSON.parse(this.snapshotState());
         const payload = JSON.stringify({ backupSchemaVersion: 2, exportedAt: new Date().toISOString(), ...state }, null, 2);
-        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const file = await this.driveUploadJson(payload, 'ATS-BACKUP-' + stamp + '.json');
-        const at = Date.now();
-        await dbSet('ats_drive_last_backup', at);
-        this.driveStatus = '✓ Backup Drive berhasil dan terverifikasi · ' + new Date(at).toLocaleString('id-ID');
+        const name = 'ATS-BACKUP-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+        await this.driveUploadJson(payload, name);
+        await dbSet('ats_drive_last_backup', Date.now());
+        this.driveStatus = '✓ Backup Drive berhasil · ' + new Date().toLocaleString('id-ID');
         await this.drivePruneBackups();
-        if (file && file.id) this.driveSelectedId = file.id;
-      } catch (e) { this.driveStatus = 'Backup Drive gagal: ' + (e.message || e); }
-      finally { this.driveBusy = false; }
+      } catch (e) {
+        this.driveStatus = 'Backup gagal: ' + ((e && e.message) || e);
+      } finally {
+        this.driveBusy = false;
+      }
     },
     async driveMaybeAutoBackup() {
-      if (!this.driveConnected || !this._driveToken || !this._localReady || this.driveBusy) return;
+      if (!this.driveConnected || this.driveBusy || !this._localReady) return;
       const last = Number(await dbGet('ats_drive_last_backup') || 0);
       if (Date.now() - last < 24 * 60 * 60 * 1000) return;
       await this.driveBackupNow();
     },
     async driveLoadBackups() {
-      if (!this.driveConnected || !this._driveToken) { this.driveStatus = 'Hubungkan Google Drive terlebih dahulu.'; return; }
-      this.driveBusy = true;
-      try { await this.driveListBackups(); }
-      catch (e) { this.driveStatus = 'Gagal membaca backup Drive: ' + (e.message || e); }
-      finally { this.driveBusy = false; }
-    },
-    async driveRestoreSelected() {
-      if (!this.driveSelectedId || !this.driveConnected || !this._driveToken) return;
+      if (!this.driveConnected) { this.driveStatus = 'Hubungkan Google Drive dulu.'; return; }
       this.driveBusy = true;
       try {
-        const res = await this.driveRequest('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(this.driveSelectedId) + '?alt=media');
-        const raw = await res.text();
-        const data = JSON.parse(raw);
-        const checked = this.siapkanCadangan(data);
+        const files = await this.driveListBackups();
+        this.driveStatus = files.length + ' cadangan ditemukan di Google Drive.';
+      } catch (e) {
+        this.driveStatus = 'Gagal membaca backup: ' + ((e && e.message) || e);
+      } finally {
         this.driveBusy = false;
+      }
+    },
+    async driveRestoreSelected() {
+      if (!this.driveSelectedId || !this.driveConnected) return;
+      this.driveBusy = true;
+      try {
+        const text = await (await this.driveRequest('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(this.driveSelectedId) + '?alt=media')).text();
+        const checked = this.siapkanCadangan(JSON.parse(text));
         this.ask(this.ringkasanCadangan(checked) + ' Sumber: Google Drive. Lanjutkan pemulihan?', () => this.terapkanCadangan(checked), 'Pulihkan dari Drive');
-      } catch (e) { this.driveBusy = false; this.driveStatus = 'Pemulihan Drive gagal: ' + (e.message || e) + '. Data aplikasi tidak diubah.'; }
+      } catch (e) {
+        this.driveStatus = 'Pemulihan gagal: ' + ((e && e.message) || e) + '. Data aplikasi tidak diubah.';
+      } finally {
+        this.driveBusy = false;
+      }
     },
     loginCloud() {
       if (!this._localReady) { this.cloudStatus = 'Penyimpanan lokal belum siap. Login/sinkronisasi cloud ditahan demi keamanan data.'; return; }
