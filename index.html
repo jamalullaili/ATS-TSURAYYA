@@ -2759,9 +2759,22 @@ function app() {
       return { units, pays, rows };
     },
     regenerateSetoran() {
-      const names = [...new Set((this.pembayaranP || []).map(c => (c.supplier || '').trim()).filter(Boolean))];
+      // Satu entri per nama pengirim (dinormalisasi), agar hitungPengirim tidak berjalan dua kali
+      const peta = new Map();
+      (this.pembayaranP || []).forEach(c => {
+        const nama = (c.supplier || '').trim();
+        const kunci = nama.toLowerCase();
+        if (kunci && !peta.has(kunci)) peta.set(kunci, nama);
+      });
+      // Pengaman terakhir: buang ID ganda
       const out = [];
-      names.forEach(n => { out.push(...this.hitungPengirim(n).rows); });
+      const sudah = new Set();
+      peta.forEach(nama => {
+        this.hitungPengirim(nama).rows.forEach(r => {
+          const id = String(r.id);
+          if (!sudah.has(id)) { sudah.add(id); out.push(r); }
+        });
+      });
       this.setoran = out;
     },
     hapusPembayaranP(id) {
@@ -3794,21 +3807,31 @@ function app() {
     },
     async driveConnect() {
       try {
-        this.driveStatus = 'Menghubungkan izin Google Drive...';
+        this.driveStatus = 'Membuka jendela izin Google Drive...';
         await this.driveLoadGIS();
         await new Promise((resolve, reject) => {
+          const batas = setTimeout(() => reject(new Error(
+            'Tidak ada respons dari Google dalam 60 detik. Izinkan pop-up untuk situs ini dan pastikan domain terdaftar di Google Cloud.'
+          )), 60000);
           this._driveTokenClient = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_DRIVE_CLIENT_ID,
             scope: GOOGLE_DRIVE_SCOPE,
             callback: (response) => {
+              clearTimeout(batas);
               if (response && response.access_token) {
                 this._driveToken = response.access_token;
                 this.driveConnected = true;
                 this.driveStatus = '✓ Google Drive terhubung. Menyiapkan folder backup...';
                 resolve();
-              } else reject(new Error((response && response.error_description) || (response && response.error) || 'Izin Google Drive tidak diberikan.'));
+              } else {
+                reject(new Error((response && (response.error_description || response.error)) || 'Izin Google Drive tidak diberikan.'));
+              }
             },
-            error_callback: (error) => reject(new Error((error && error.message) || 'Jendela izin Google Drive gagal dibuka.'))
+            error_callback: (error) => {
+              clearTimeout(batas);
+              const tipe = error && error.type ? error.type : '';
+              reject(new Error(tipe === 'popup_closed' ? 'Jendela izin ditutup sebelum selesai.' : ((error && error.message) || 'Jendela izin Google Drive gagal dibuka.')));
+            }
           });
           this._driveTokenClient.requestAccessToken({ prompt: 'consent' });
         });
@@ -3965,7 +3988,7 @@ function app() {
       const arrays = [...this.cloudRecordCollections().map(k => this.cloudStateKey(k)), 'trx'];
       for (const k of arrays) if (state[k] !== undefined && !Array.isArray(state[k])) throw new Error('Bagian data "' + k + '" harus berupa daftar.');
       for (const k of ['days', 'makanDays']) for (const v of (state[k] || [])) if (typeof v !== 'string') throw new Error('Isi "' + k + '" tidak valid.');
-      for (const k of arrays.filter(x => x !== 'days' && x !== 'makanDays')) {
+      for (const k of arrays.filter(x => x !== 'days' && x !== 'makanDays' && x !== 'setoran')) {
         const seen = new Set();
         for (const item of (state[k] || [])) {
           if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('Ada catatan tidak valid pada "' + k + '".');
