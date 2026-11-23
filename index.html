@@ -313,6 +313,111 @@
   .bg-white.shadow-xl.z-50 button span.text-\[10px\] { font-size: 11.5px !important; color: #64748b !important; margin-top: 2px; }
   .bg-white.shadow-xl.z-50 .badge { white-space: nowrap; font-size: 11px !important; }
 </style>
+
+<style id="popup-glass-fix">
+  /* Popup kaca dibuat lebih lembut; hanya memengaruhi lapisan popup, bukan kartu dashboard. */
+  .popup-glass-backdrop {
+    background: rgba(15, 23, 42, .24) !important;
+    -webkit-backdrop-filter: blur(5px) saturate(112%);
+    backdrop-filter: blur(5px) saturate(112%);
+  }
+  .popup-glass-panel {
+    background: rgba(248, 250, 252, .88) !important;
+    background-image: linear-gradient(145deg, rgba(255,255,255,.82), rgba(241,245,249,.78)) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(125%);
+    backdrop-filter: blur(18px) saturate(125%);
+    border: 1px solid rgba(255,255,255,.78) !important;
+    box-shadow: 0 22px 60px -24px rgba(15,23,42,.48), inset 0 1px 0 rgba(255,255,255,.9) !important;
+  }
+  .popup-glass-panel input, .popup-glass-panel select {
+    background: rgba(255,255,255,.9) !important;
+  }
+</style>
+
+<style id="tema-liquid-glass-iphone">
+  /* Liquid Glass menyeluruh: kilau berlapis, transparansi terkontrol, blur lembut */
+  :root {
+    --lg-white: rgba(255,255,255,.48);
+    --lg-white-strong: rgba(255,255,255,.68);
+    --lg-border: rgba(255,255,255,.72);
+    --lg-shadow: 0 12px 34px rgba(31,41,55,.12), inset 0 1px 0 rgba(255,255,255,.88), inset 0 -1px 0 rgba(255,255,255,.22);
+  }
+  body {
+    background-color: #e8edf7 !important;
+    background-image:
+      radial-gradient(ellipse at 8% 4%, rgba(125,180,255,.48), transparent 42%),
+      radial-gradient(ellipse at 94% 12%, rgba(236,174,218,.38), transparent 40%),
+      radial-gradient(ellipse at 48% 100%, rgba(135,220,196,.34), transparent 48%),
+      linear-gradient(145deg,#edf3fc 0%,#e7edf7 48%,#f2edf8 100%) !important;
+    background-attachment: fixed !important;
+  }
+  header, .navkaca {
+    background: rgba(255,255,255,.42) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+    backdrop-filter: blur(24px) saturate(180%) !important;
+    border: 1px solid rgba(255,255,255,.62) !important;
+    box-shadow: 0 8px 28px rgba(31,41,55,.09), inset 0 1px 0 rgba(255,255,255,.82) !important;
+  }
+  .card, .bg-white:not([class*="/"]), .bg-stone-50, .bg-slate-50,
+  .bg-stone-100, .bg-slate-100, .bg-emerald-50, .bg-amber-50,
+  .bg-rose-50, .bg-sky-50, .bg-indigo-50,
+  [class*="rounded-xl"], [class*="rounded-2xl"] {
+    background-color: var(--lg-white) !important;
+    background-image: linear-gradient(145deg,rgba(255,255,255,.52),rgba(255,255,255,.18) 52%,rgba(255,255,255,.34)) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(165%) !important;
+    backdrop-filter: blur(18px) saturate(165%) !important;
+    border: 1px solid rgba(255,255,255,.66) !important;
+    box-shadow: var(--lg-shadow) !important;
+  }
+  .card { border-radius: 22px !important; }
+  .card:hover { box-shadow: 0 16px 38px rgba(31,41,55,.15), inset 0 1px 0 rgba(255,255,255,.9) !important; }
+  .navkaca { background: rgba(255,255,255,.52) !important; border-radius: 28px !important; }
+  .navpil { background: linear-gradient(135deg,rgba(255,255,255,.78),rgba(210,225,248,.54)) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.95),0 3px 12px rgba(31,41,55,.1) !important; }
+  .btn, button.btn, .btn-light, .btn-soft {
+    border: 1px solid rgba(255,255,255,.76) !important;
+    box-shadow: 0 4px 12px rgba(31,41,55,.08),inset 0 1px 0 rgba(255,255,255,.85) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+    backdrop-filter: blur(12px) saturate(160%) !important;
+  }
+  .btn-light, .btn-soft { background: rgba(255,255,255,.48) !important; }
+  .btn-navy, button.bg-stone-900 {
+    background: linear-gradient(135deg,rgba(42,69,111,.94),rgba(11,47,91,.96)) !important;
+    border: 1px solid rgba(255,255,255,.32) !important;
+    box-shadow: 0 7px 18px rgba(11,47,91,.22),inset 0 1px 0 rgba(255,255,255,.24) !important;
+  }
+  .inp, input[type="text"], input[type="date"], input[type="search"], input[type="number"], select, textarea {
+    background: rgba(255,255,255,.62) !important;
+    border: 1px solid rgba(255,255,255,.82) !important;
+    box-shadow: inset 0 1px 3px rgba(31,41,55,.045),0 1px 0 rgba(255,255,255,.7) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(150%) !important;
+    backdrop-filter: blur(10px) saturate(150%) !important;
+  }
+  .th { background: rgba(255,255,255,.42) !important; -webkit-backdrop-filter: blur(12px) !important; backdrop-filter: blur(12px) !important; }
+  .td { border-bottom-color: rgba(255,255,255,.56) !important; }
+  tbody tr:hover td { background: rgba(255,255,255,.3) !important; }
+  .popup-glass-backdrop, .fixed.inset-0.z-50, .fixed.inset-0.z-\[60\], .fixed.inset-0.z-\[70\] {
+    background: rgba(20,32,54,.30) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(135%) !important;
+    backdrop-filter: blur(12px) saturate(135%) !important;
+  }
+  .popup-glass-panel {
+    background: linear-gradient(145deg,rgba(255,255,255,.78),rgba(238,244,253,.62) 58%,rgba(255,255,255,.70)) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(185%) !important;
+    backdrop-filter: blur(30px) saturate(185%) !important;
+    border: 1px solid rgba(255,255,255,.88) !important;
+    border-radius: 26px !important;
+    box-shadow: 0 28px 80px rgba(15,23,42,.28),inset 0 1px 0 rgba(255,255,255,.98),inset 0 -1px 0 rgba(255,255,255,.3) !important;
+  }
+  .popup-glass-panel input, .popup-glass-panel select { background: rgba(255,255,255,.72) !important; }
+  .bg-white.shadow-xl.z-50 { background: rgba(248,251,255,.92) !important; -webkit-backdrop-filter: blur(22px) saturate(160%) !important; backdrop-filter: blur(22px) saturate(160%) !important; }
+  @supports not ((backdrop-filter: blur(1px))) {
+    .card, .navkaca, header, .popup-glass-panel { background-color: rgba(245,248,253,.94) !important; }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .card, .navkaca, header, .popup-glass-panel { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background-color: rgba(245,248,253,.96) !important; }
+  }
+</style>
+
 </head><body class="antialiased" x-data="app()">
 <div class="min-h-screen pb-24 md:pb-12">
 <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-stone-200">
@@ -1409,8 +1514,8 @@
 </div>
 
 <!-- ===== FORM UNIVERSAL ===== -->
-<div x-show="modal.open" x-cloak class="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
-  <div class="card p-6 max-w-md w-full space-y-4 max-h-[90vh] overflow-y-auto" @click.away="if (!$event.target.closest('[data-konfirmasi]')) modal.open = false">
+<div x-show="modal.open" x-cloak class="popup-glass-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="popup-glass-panel card p-6 max-w-md w-full space-y-4 max-h-[90vh] overflow-y-auto" @click.away="if (!$event.target.closest('[data-konfirmasi]')) modal.open = false">
     <div class="flex items-center justify-between">
       <h3 class="font-bold text-slate-900 text-lg" x-text="modal.title"></h3>
       <button @click="modal.open = false" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
@@ -1973,7 +2078,6 @@ function app() {
       });
       this.$watch(() => this.snapshotState(),
         v => {
-          this._hpCache = null;
           if (!this.siapSimpan || this._savingWatch || !this._localReady || v === this._lastSnapshot) return;
           this._pendingLocalSnapshot = v;
           clearTimeout(this._localSaveTimer);
@@ -2218,7 +2322,7 @@ function app() {
             .sort((a, b) => (a.hari || '').localeCompare(b.hari || '') || (a.id - b.id))
             .map(x => ({
               id: x.id, hari: x.hari, sisa: this.sisaD(x), status: this.isTU(x.status) ? 'TU' : 'Belum', bisa: true,
-              label: '[Diluar] ' + this.tgl(x.hari) + ' · ' + ((x.items || []).map(i => i.nama).filter(Boolean).join(', ') || 'Diluar')
+              label: this.tgl(x.hari) + ' · ' + ((x.items || []).map(i => i.nama).filter(Boolean).join(', ') || 'Diluar')
             }))
         };
       }
@@ -2242,7 +2346,10 @@ function app() {
     },
     openBayar(kind, ref) {
       const namaRef = kind === 'pengecer' ? ref.pengecer : (kind === 'diluar' ? ref.nama : null);
-      if (namaRef && this.punyaKeduaJenis(namaRef, kind)) { this.openBayarGabung(namaRef); return; }
+      // Pengecer dan Diluar selalu memakai satu popup berdasarkan nama orang.
+      // Jika orang memiliki kedua jenis transaksi, seluruh tagihan tampil bersama;
+      // jika hanya satu jenis, popup tetap sama tanpa mode khusus.
+      if (namaRef) { this.openBayarOrang(namaRef); return; }
       const info = this.bayarInfo(kind, ref);
       const pilih = {};
       info.items.forEach(i => { if (i.bisa !== false && i.sisa <= 0) pilih[i.id] = true; });
@@ -2280,7 +2387,7 @@ function app() {
     },
     editBayarModal(r) {
       const m = this.modal;
-      if (m.kind === 'gabung') { this.editBayarGabung(r); return; }
+      if (m.kind === 'orang') { this.editBayarOrang(r); return; }
       const items = this.bayarInfoTanpa(r.id);
       m.items = items;
       const pilih = {};
@@ -2297,9 +2404,9 @@ function app() {
       };
       m.title = 'Edit pembayaran - ' + m.nama;
     },
-    editBayarGabung(r) {
+    editBayarOrang(r) {
       const m = this.modal;
-      // Satu pembayaran gabungan bisa berisi beberapa catatan (P & D) dengan grupId yang sama
+      // Satu pembayaran satu orang bisa berisi beberapa catatan (P & D) dengan grupId yang sama
       const grup = (this.pembayaran || []).filter(c => r.grupId ? c.grupId === r.grupId : c.id === r.id);
       const total = grup.reduce((s, c) => s + (Number(c.jumlah) || 0), 0);
       const pilih = {};
@@ -2308,7 +2415,7 @@ function app() {
       const sebelum = this.pembayaran || [];
       this.pembayaran = sebelum.filter(c => !grup.includes(c));
       this.alokasiNama(m.nama); this.alokasiNamaD(m.nama);
-      this.openBayarGabung(m.nama);
+      this.openBayarOrang(m.nama);
       this.pembayaran = sebelum;
       this.alokasiNama(m.nama); this.alokasiNamaD(m.nama);
       const baru = this.modal;
@@ -2324,7 +2431,7 @@ function app() {
     },
     batalEditBayar() {
       const m = this.modal;
-      if (m.kind === 'gabung') { this.openBayarGabung(m.nama); return; }
+      if (m.kind === 'orang') { this.openBayarOrang(m.nama); return; }
       m.items = this.bayarInfo(m.kind, m.ref).items;
       m.f = { tgl: today(), jumlah: '', metode: 'Cash', jenis: 'Lunas', potongan: false, pilih: {}, editId: null };
       m.title = 'Pembayaran - ' + m.nama;
@@ -2355,13 +2462,33 @@ function app() {
     },
     riwayatBayarModal() {
       const m = this.modal;
-      if (m.kind === 'gabung') {
+      if (m.kind === 'orang') {
+        // Sama seperti popup Pengecer: riwayat hanya tampil selama setidaknya
+        // satu transaksi yang dituju pembayaran tersebut masih belum lunas.
+        // Jika seluruh transaksi tujuan sudah lunas, riwayatnya disembunyikan.
         const aktif = new Set([
-          ...this.trxNama(m.nama).filter(t => !t.lunas && this.sisaT(t) > 0).map(t => 'P' + t.id),
-          ...this.trxNamaD(m.nama).filter(x => !x.lunas && this.sisaD(x) > 0).map(x => 'D' + x.id)
+          ...this.trxNama(m.nama)
+            .filter(t => !t.lunas && !String(t.jenis || '').startsWith('Lapak'))
+            .map(t => 'P' + t.id),
+          ...this.trxNamaD(m.nama)
+            .filter(x => !x.lunas)
+            .map(x => 'D' + x.id)
         ]);
-        return [...this.pembayaranNama(m.nama, 'P'), ...this.pembayaranNama(m.nama, 'D')]
-          .filter(c => (c.targetIds || []).some(id => aktif.has((c.kind || 'P') + id)))
+        const semua = [
+          ...this.pembayaranNama(m.nama, 'P').map(c => ({ ...c, _side: 'P' })),
+          ...this.pembayaranNama(m.nama, 'D').map(c => ({ ...c, _side: 'D' }))
+        ].filter(c => (c.targetIds || []).some(id => aktif.has(c._side + id)));
+        const satuOrang = new Map();
+        semua.forEach(c => {
+          const key = c.grupId ? 'G' + c.grupId : 'I' + c.id;
+          if (!satuOrang.has(key)) satuOrang.set(key, { ...c, jumlah: 0, _ids: [], niat: c.niat || c.jenis });
+          const r = satuOrang.get(key);
+          r.jumlah += Number(c.jumlah) || 0;
+          r._ids.push(c.id);
+          if ((c.niat || c.jenis) === 'TU') r.niat = 'TU';
+        });
+        return [...satuOrang.values()]
+          .map(r => ({ ...r, jenis: r.niat === 'Lunas' ? 'Lunas' : 'TU' }))
           .sort((a, b) => (b.tgl || '').localeCompare(a.tgl || '') || (String(b.id) < String(a.id) ? -1 : 1));
       }
       const relevan = (c, t) => (c.jenis === 'Lunas')
@@ -2383,13 +2510,17 @@ function app() {
     },
     hapusBayarModal(r) {
       const kind = this.modal.kind, ref = this.modal.ref;
-      if (kind === 'gabung') {
+      if (kind === 'orang') {
         const nama = this.modal.nama;
         this.ask('Hapus pembayaran ' + this.rp(r.jumlah) + '?', () => {
-          this.hapusPembayaran(r.id);
+          const hapusIds = new Set(r.grupId
+            ? (this.pembayaran || []).filter(c => c.grupId === r.grupId).map(c => c.id)
+            : [r.id]);
+          this.pembayaran = (this.pembayaran || []).filter(c => !hapusIds.has(c.id));
           this.alokasiNama(nama);
           this.alokasiNamaD(nama);
-          this.openBayarGabung(nama);
+          this.catat(nama, 'Hapus pembayaran ' + this.rp(r.jumlah));
+          this.openBayarOrang(nama);
         });
         return;
       }
@@ -2402,7 +2533,7 @@ function app() {
       });
     },
     simpanBayar() {
-      if (this.modal.kind === 'gabung') { this.simpanBayarGabung(); return; }
+      if (this.modal.kind === 'orang') { this.simpanBayarOrang(); return; }
       const m = this.modal, f = m.f;
       const st = this.bayarStatus();
       if (!st.ok) return;
@@ -2461,7 +2592,7 @@ function app() {
       const allPays = [...this.pembayaranNama(n, 'P'), ...this.pembayaranNama(n, 'D')]
         .sort((a, b) => (a.tgl || '').localeCompare(b.tgl || '') || (a.id - b.id));
 
-      // Kumpulkan item yang belum lunas beserta rangkaian item yang terhubung melalui pembayaran TU / gabungan yang sama
+      // Kumpulkan item yang belum lunas beserta rangkaian item yang terhubung melalui pembayaran TU yang sama
       const includedKeys = new Set();
       const includedPayIds = new Set();
       items.forEach(it => {
@@ -2738,16 +2869,10 @@ function app() {
       });
       return units;
     },
+    // Tanpa cache: selalu hitung ulang dari data terbaru agar perubahan
+    // nota pengirim dan centengan langsung tercermin di Dashboard.
     hitungPengirim(nama) {
-      if (!this._hpCache) this._hpCache = new Map();
-      if (this._hpCache.has(nama)) return this._hpCache.get(nama);
-      const hasil = this.hitungPengirimRaw(nama);
-      this._hpCache.set(nama, hasil);
-      if (!this._hpClearQ) {
-        this._hpClearQ = true;
-        queueMicrotask(() => { this._hpCache = null; this._hpClearQ = false; });
-      }
-      return hasil;
+      return this.hitungPengirimRaw(nama);
     },
     hitungPengirimRaw(nama) {
       const k = (nama || '').trim().toLowerCase();
@@ -2777,7 +2902,6 @@ function app() {
       return { units, pays, rows };
     },
     regenerateSetoran() {
-      this._hpCache = null;
       // Satu entri per nama pengirim (dinormalisasi), agar hitungPengirim tidak berjalan dua kali
       const peta = new Map();
       (this.pembayaranP || []).forEach(c => {
@@ -2811,7 +2935,6 @@ function app() {
         t => this.totalD(t));
     },
     alokasiInti(list, pays, totalOf) {
-      this._hpCache = null;
       // Aturan kelompok:
       // - Setiap pembayaran membentuk kelompok dari transaksi yang dicentang (targetIds).
       // - Pembayaran TU: seluruh anggota kelompok berstatus TU sampai kelompoknya lunas.
@@ -3446,26 +3569,32 @@ function app() {
       this.alokasiNamaD(nm);
       this.notaIsi();
     },
-    openBayarGabung(nama) {
+    openBayarOrang(nama) {
+      // Selalu hitung ulang dari seluruh riwayat pembayaran sebelum menyusun popup.
+      // Ini mencegah daftar transaksi memakai sisa/status lama setelah ada pelunasan.
+      this.alokasiNama(nama);
+      this.alokasiNamaD(nama);
       const urut = (a, b) => (a.hari || '').localeCompare(b.hari || '') || (a.rid - b.rid);
       const itemP = this.trxNama(nama)
-        .filter(t => !t.lunas && !String(t.jenis || '').startsWith('Lapak') && this.sisaT(t) > 0)
+        // Transaksi dengan sisa Rp0 tetap ditampilkan jika statusnya TU.
+        // TU bukan Lunas; transaksi hanya dikeluarkan setelah benar-benar Lunas.
+        .filter(t => !t.lunas && !String(t.jenis || '').startsWith('Lapak') && (this.sisaT(t) > 0 || this.isTU(t.status)))
         .map(t => ({ id: 'P' + t.id, side: 'P', rid: t.id, hari: t.hari, sisa: this.sisaT(t), status: this.isTU(t.status) ? 'TU' : 'Belum', bisa: true,
           label: this.tgl(t.hari) + ' · ' + (t.barang || '-') }));
       const itemD = this.trxNamaD(nama)
-        .filter(x => !x.lunas && this.sisaD(x) > 0)
+        .filter(x => !x.lunas && (this.sisaD(x) > 0 || this.isTU(x.status)))
         .map(x => ({ id: 'D' + x.id, side: 'D', rid: x.id, hari: x.hari, sisa: this.sisaD(x), status: this.isTU(x.status) ? 'TU' : 'Belum', bisa: true,
-          label: '[Diluar] ' + this.tgl(x.hari) + ' · ' + ((x.items || []).map(i => i.nama).filter(Boolean).join(', ') || 'Diluar') }));
+          label: this.tgl(x.hari) + ' · ' + ((x.items || []).map(i => i.nama).filter(Boolean).join(', ') || 'Diluar') }));
       const items = [...itemP, ...itemD].sort(urut);
       this.searchModal.open = false;
       this.modal = {
-        open: true, type: 'bayar', kind: 'gabung', ref: { jenis: '' }, nama, items, refId: null,
+        open: true, type: 'bayar', kind: 'orang', ref: { jenis: '' }, nama, items, refId: null,
         title: 'Pembayaran - ' + nama,
         f: { tgl: today(), jumlah: '', metode: 'Cash', jenis: 'Lunas', potongan: false, pilih: {}, editId: null },
         id: null, parent: { nama: nama, pengecer: nama }
       };
     },
-    simpanBayarGabung() {
+    simpanBayarOrang() {
       const m = this.modal, f = m.f;
       const st = this.bayarStatus();
       if (!st.ok) return;
