@@ -989,7 +989,7 @@
               </div>
 
                                           <!-- nota: tagihan hari ini + bayar -->
-            <div class="rounded-xl px-5 py-4" :class="tagihanBoxClass(p)">
+            <div class="rounded-xl px-5 py-4 transition-colors" :class="tagihanBoxClass(p)">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
@@ -2522,15 +2522,25 @@ function app() {
     riwayatBayarModal() {
       const m = this.modal;
       if (m.kind === 'orang') {
-        // Sama seperti popup Pengecer: riwayat hanya tampil selama setidaknya
-        // satu transaksi yang dituju pembayaran tersebut masih belum lunas.
-        // Jika seluruh transaksi tujuan sudah lunas, riwayatnya disembunyikan.
+        // Tampilkan hanya pembayaran yang masih punya keterkaitan nyata dengan
+        // transaksi: TU yang masih aktif/menjadi asal TU transaksi lunas, atau
+        // pembayaran Lunas yang benar-benar melunasi transaksi terpilih.
         const semua = [
-          ...this.pembayaranNama(m.nama, 'P').map(c => ({ ...c, _side: 'P' })),
-          ...this.pembayaranNama(m.nama, 'D').map(c => ({ ...c, _side: 'D' }))
-        ].filter(c => Array.isArray(c.ids) && c.ids.length > 0);
+          ...this.pembayaranNama(m.nama, 'P').map(c => ({ c, side: 'P' })),
+          ...this.pembayaranNama(m.nama, 'D').map(c => ({ c, side: 'D' }))
+        ];
+        const relevan = ({ c, side }) => {
+          const daftar = side === 'D' ? this.trxNamaD(m.nama) : this.trxNama(m.nama);
+          const ids = Array.isArray(c.ids) ? c.ids : [];
+          return ids.some(id => {
+            const t = daftar.find(x => String(x.id) === String(id));
+            if (!t) return false;
+            if ((c.niat || c.jenis) === 'Lunas') return !!t.lunas && t.lunasPay === c;
+            return (t.aktifs || []).includes(c) || (!!t.lunas && (t.siklus || []).includes(c));
+          });
+        };
         const satuOrang = new Map();
-        semua.forEach(c => {
+        semua.filter(relevan).forEach(({ c }) => {
           const key = c.grupId ? 'G' + c.grupId : 'I' + c.id;
           if (!satuOrang.has(key)) satuOrang.set(key, { ...c, jumlah: 0, _ids: [], niat: c.niat || c.jenis });
           const r = satuOrang.get(key);
@@ -3329,7 +3339,10 @@ function app() {
     },
     tagihanBoxClass(p) {
       const st = this.statusHariP(p);
-      return st === 'Lunas' ? 'bg-[#f0fdf4]' : st === 'TU' ? 'bg-[#fff7ed]' : 'bg-[#fafaf9]';
+      if (st === 'Lunas') return 'bg-emerald-50 border border-emerald-200';
+      if (st === 'TU') return 'bg-orange-50 border border-orange-200';
+      if (st === 'Belum') return 'bg-rose-50 border border-rose-200';
+      return 'bg-stone-50 border border-stone-200';
     },
     hitungPosisiBon() {
       const paper = this.$refs.cetak;
@@ -4009,16 +4022,16 @@ function app() {
       }
     },
     bukaHariMakan() { this.isiHariMakan(); },
-    dalamRentang(d) { return d <= today(); },
+    dalamRentang(d) { return !!d && d <= this.batasHariMakan(); },
     makanHariRentang() { return this.makanDays.filter(d => this.dalamRentang(d)); },
     periodeHariBayar(b) {
       const prev = this.bayarMakanOrang(b.anakId).filter(x => x.id !== b.id && x.tanggal < b.tanggal).slice(-1)[0];
       const from = prev ? prev.tanggal : '';
-      return this.makanDays.filter(d => d > from && d <= b.tanggal).sort();
+      return this.makanDays.filter(d => d > from && d <= b.tanggal && d <= this.batasHariMakan()).sort();
     },
     makanPeriode(id) {
       const from = this.makanTerakhir(id);
-      return this.makanDays.filter(d => d > from && d <= today()).sort();
+      return this.makanDays.filter(d => d > from && d <= this.batasHariMakan()).sort();
     },
     makanBelumHadir(id) { return this.makanPeriode(id).filter(d => !this.absenHari(d, id)).length; },
     makanBelumTidak(id) { return this.makanPeriode(id).filter(d => this.absenHari(d, id)).length; },
@@ -4039,7 +4052,7 @@ function app() {
     periodeBayar(b) {
       const prev = this.bayarMakanOrang(b.anakId).filter(x => x.id !== b.id && x.tanggal < b.tanggal).slice(-1)[0];
       const from = prev ? prev.tanggal : '';
-      const hari = this.makanDays.filter(d => d > from && d <= b.tanggal && !this.absenHari(d, b.anakId)).length;
+      const hari = this.makanDays.filter(d => d > from && d <= b.tanggal && d <= this.batasHariMakan() && !this.absenHari(d, b.anakId)).length;
       return { hari, perHari: hari ? Math.round((Number(b.jumlah) || 0) / hari) : 0 };
     },
     previewBayarMakan() {
@@ -4047,7 +4060,7 @@ function app() {
       if (!f.anakId || !f.tanggal) return null;
       const prev = this.bayarMakanOrang(f.anakId).filter(x => x.id !== f.editId && x.tanggal < f.tanggal).slice(-1)[0];
       const from = prev ? prev.tanggal : '';
-      const hari = this.makanDays.filter(d => d > from && d <= f.tanggal && !this.absenHari(d, f.anakId)).length;
+      const hari = this.makanDays.filter(d => d > from && d <= f.tanggal && d <= this.batasHariMakan() && !this.absenHari(d, f.anakId)).length;
       const j = this.dg(f.jumlah);
       return { hari, perHari: hari && j ? Math.round(j / hari) : 0, dari: from };
     },
