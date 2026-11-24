@@ -62,23 +62,6 @@
   #cetak .text-slate-800, #cetak .text-slate-700, #cetak .text-slate-900 { color: #1e293b !important; }
   #cetak .text-slate-600 { color: #475569 !important; }
   #cetak td, #cetak th { color: #1e293b; }
-  @media print {
-    .no-print { display: none !important; }
-    body * { visibility: hidden !important; }
-    #cetak, #cetak * { visibility: visible !important; }
-    @page { size: A6; margin: 6mm; }
-    #cetak { position: absolute; left: 0; top: 0; width: 100% !important; padding: 0 !important; background: #fff !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    #cetak * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    #cetak .text-3xl { font-size: 17px !important; line-height: 1 !important; }
-    #cetak .text-sm { font-size: 9px !important; line-height: 1.15 !important; }
-    #cetak .text-xs { font-size: 7.5px !important; line-height: 1.15 !important; }
-    #cetak table th, #cetak table td { font-size: 8px !important; padding: 1px 3px !important; line-height: 1.1 !important; }
-    #cetak .w-24 { width: 60px !important; }
-    #cetak .h-24 { height: 60px !important; }
-    #cetak [class*="text-[11px]"], #cetak [class*="text-[13.5px]"], #cetak [class*="text-[14px]"], #cetak [class*="text-[13px]"] { font-size: 8px !important; }
-    #cetak [style*="font-size:16px"] { font-size: 10px !important; }
-    #cetak [style*="font-size:12px"] { font-size: 8px !important; }
-  }
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b2f5b">
@@ -132,16 +115,14 @@
 <style id="bon-cetak-css">
   .bon-cetak { display: none; }
   @media print {
-    @page { size: A6; margin: 0; }
-    html, body { margin: 0 !important; padding: 0 !important; height: 148mm !important; overflow: hidden !important; background: #fff !important; }
+    @page { size: 105mm 148mm; margin: 0; }
+    html, body { width: 105mm !important; height: 148mm !important; min-height: 148mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #fff !important; }
     body * { visibility: hidden !important; }
-    .min-h-screen { height: 0 !important; min-height: 0 !important; overflow: hidden !important; padding: 0 !important; margin: 0 !important; }
-    nav, header { display: none !important; }
-    #bon-cetak, #bon-cetak * { visibility: visible !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    #bon-cetak { display: block !important; position: fixed !important; left: 0 !important; top: 0 !important; width: 105mm !important; height: 148mm !important; margin: 0 !important; }
-    #bon-cetak .bp { width: 105mm; height: 148mm; }
-    #cetak { display: none !important; }
-    .bon-cetak { display: block !important; position: absolute; left: 0; top: 0; visibility: visible !important; }
+    .no-print, nav, header, #cetak { display: none !important; }
+    .min-h-screen { height: 148mm !important; min-height: 148mm !important; max-height: 148mm !important; overflow: hidden !important; padding: 0 !important; margin: 0 !important; }
+    #bon-cetak, #bon-cetak * { visibility: visible !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    #bon-cetak { display: block !important; position: fixed !important; inset: 0 auto auto 0 !important; width: 105mm !important; height: 148mm !important; max-height: 148mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; break-after: avoid-page !important; page-break-after: avoid !important; }
+    #bon-cetak .bp { width: 105mm !important; height: 148mm !important; max-height: 148mm !important; break-inside: avoid !important; page-break-inside: avoid !important; }
   }
 </style>
 <style id="bp-css">
@@ -1030,7 +1011,24 @@
       </section>
 
       <!-- ===== BELUM BAYAR (TAGIHAN & DILUAR) ===== -->
-      <section x-show="view === 'bon'" x-cloak class="space-y-6">
+      <section x-show="view === 'bon'" x-cloak class="space-y-5">
+        <!-- Pilihan menu Bon: memakai kontrol ringkas yang senada dengan kontrol lain -->
+        <div class="grid grid-cols-2 gap-2 sm:gap-3 no-print w-full">
+          <button type="button" @click="bonTab = 'belum'"
+            :class="bonTab === 'belum' ? 'bg-stone-900 text-white shadow-md border-stone-900' : 'bg-white/75 text-slate-600 border-slate-200 hover:bg-slate-50'"
+            class="w-full min-w-0 rounded-2xl border px-3 py-3.5 sm:py-4 text-center font-semibold transition flex flex-col items-center justify-center gap-1.5">
+            <span class="inline-flex items-center gap-2 text-sm sm:text-base"><i class="ph-fill ph-clock-countdown text-base"></i>Belum Bayar</span>
+            <span class="text-xs opacity-75" x-text="tagihanList().length + ' pihak'"></span>
+          </button>
+          <button type="button" @click="bonTab = 'pembayaran'"
+            :class="bonTab === 'pembayaran' ? 'bg-stone-900 text-white shadow-md border-stone-900' : 'bg-white/75 text-slate-600 border-slate-200 hover:bg-slate-50'"
+            class="w-full min-w-0 rounded-2xl border px-3 py-3.5 sm:py-4 text-center font-semibold transition flex flex-col items-center justify-center gap-1.5">
+            <span class="inline-flex items-center gap-2 text-sm sm:text-base"><i class="ph-fill ph-wallet text-base"></i>Pembayaran</span>
+            <span class="text-xs opacity-75" x-text="pembayaranBonList().length + ' pembayaran'"></span>
+          </button>
+        </div>
+
+        <div x-show="bonTab === 'belum'" x-cloak class="space-y-6">
         <div class="card p-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total Belum Bayar (Pengecer & Diluar)</p>
@@ -1067,7 +1065,7 @@
                 </div>
                 <p class="font-extrabold text-rose-700 text-base shrink-0" x-text="rp(g.total)"></p>
               </button>
-              <div x-show="bonBuka[g.hari]" x-cloak class="divide-y divide-slate-100 border-t border-slate-200">
+              <div x-show="bonBuka[g.hari]" x-cloak class="divide-y divide-slate-200 border-t border-slate-200">
                 <template x-for="it in g.items" :key="it.nama + it.kat">
                   <div class="px-4 py-2.5 flex items-center justify-between gap-3">
                     <div class="min-w-0">
@@ -1117,6 +1115,63 @@
             </tbody>
             <tfoot class="bg-slate-50 font-bold"><tr><td colspan="2" class="td text-right text-xs uppercase text-slate-500">Total</td><td class="td text-right text-base text-rose-700 font-extrabold" x-text="rp(tagihanTotal())"></td></tr></tfoot>
           </table>
+        </div>
+        </div>
+
+        <!-- Riwayat pembayaran bon dikelompokkan per bulan, lalu per tanggal -->
+        <div x-show="bonTab === 'pembayaran'" x-cloak class="space-y-4">
+          <div class="card p-6 flex flex-wrap items-center justify-between gap-4">
+            <div class="min-w-0">
+              <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total pembayaran bon</p>
+              <p class="text-3xl font-extrabold text-emerald-700 mt-1 whitespace-nowrap" x-text="rp(pembayaranBonTotalBulan())"></p>
+              <div class="mt-2">
+                <select :value="pembayaranBonBulanAktif()" @change="bonBayarBulan = $event.target.value; bonBayarBuka = {}" class="inp !w-auto max-w-[150px] !px-2 !py-1.5 !text-xs" aria-label="Pilih bulan pembayaran">
+                  <template x-for="b in pembayaranBonBulanList().slice().reverse()" :key="b"><option :value="b" x-text="bulanLabel(b)"></option></template>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 no-print">
+            <select x-model="bonBayarUrut" class="inp !w-auto !py-1.5 !text-xs" aria-label="Urutan tanggal pembayaran">
+              <option value="lama">Tanggal terlama dulu</option>
+              <option value="baru">Tanggal terbaru dulu</option>
+            </select>
+            <button type="button" @click="bukaSemuaPembayaranBon(true)" class="btn btn-light !py-1.5 !px-2.5 !text-xs">Buka semua</button>
+            <button type="button" @click="bukaSemuaPembayaranBon(false)" class="btn btn-light !py-1.5 !px-2.5 !text-xs">Tutup semua</button>
+          </div>
+          <template x-for="g in pembayaranBonPerTanggal()" :key="g.tanggal">
+            <div class="card overflow-hidden">
+              <button type="button" @click="bonBayarBuka[g.tanggal] = !bonBayarBuka[g.tanggal]" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left transition">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-slate-500 text-xs transition-transform duration-200 inline-block" :class="bonBayarBuka[g.tanggal] ? 'rotate-90' : ''">▶</span>
+                  <div class="min-w-0">
+                    <p class="font-bold text-slate-900 text-sm" x-text="tgl(g.tanggal)"></p>
+                    <p class="text-xs text-slate-500" x-text="g.items.length + ' pembayaran' "></p>
+                  </div>
+                </div>
+                <p class="font-extrabold text-emerald-700 text-sm sm:text-base shrink-0" x-text="rp(g.total)"></p>
+              </button>
+              <div x-show="bonBayarBuka[g.tanggal]" x-cloak class="divide-y divide-slate-200 border-t border-slate-200">
+                <template x-for="c in g.items" :key="c.id">
+                  <div class="px-4 py-2.5 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="font-semibold text-slate-800 text-sm truncate" x-text="c.nama"></p>
+                      <p x-show="c.tanggalTransaksi" class="text-[10px] text-slate-400 mt-0.5" x-text="'Transaksi: ' + c.tanggalTransaksi"></p>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <p class="font-bold text-emerald-700 text-sm whitespace-nowrap" x-text="rp(c.jumlah)"></p>
+                      <p class="text-[10px] text-slate-500 mt-0.5" x-text="(c.metode || 'Cash') + ' · ' + (c.jenis || 'TU')"></p>
+                    </div>
+                  </div>
+                </template>
+                <div class="px-4 py-2.5 bg-slate-50/70 flex justify-between items-center text-xs font-bold">
+                  <span class="text-slate-500">Total tanggal ini</span>
+                  <span class="text-emerald-700" x-text="rp(g.total)"></span>
+                </div>
+              </div>
+            </div>
+          </template>
+          <div x-show="pembayaranBonPerTanggal().length === 0" class="card p-8 text-center text-slate-400 text-sm">Tidak ada pembayaran pada bulan ini.</div>
         </div>
       </section>
 
@@ -2001,6 +2056,10 @@ function app() {
     navAktif: '',
     pilihTanggal: today(),
     bonMode: 'orang',
+    bonTab: 'belum',
+    bonBayarBuka: {},
+    bonBayarUrut: 'baru',
+    bonBayarBulan: '',
     bonUrut: 'lama',
     bonBuka: {},
     riwayat: [],
@@ -2647,7 +2706,7 @@ function app() {
           (x.items || []).forEach((sub, idx) => {
             rows.push({
               tgl: x.hari,
-              desk: sub.nama || 'Diluar',
+              desk: sub.nama || '',
               qty: sub.berat,
               harga: Number(sub.harga) || 0,
               bayar: idx === 0 && this.hasBayar(x) ? Number(x.bayar) : 0,
@@ -3366,6 +3425,77 @@ function app() {
       });
     },
     bulanAktif() { const l = this.bulanList(); if (this.pickMonth && l.some(b => b.bulan === this.pickMonth)) return this.pickMonth; return l.length ? l[l.length - 1].bulan : ''; },
+
+    // Rekap pembayaran bon (Pengecer & Diluar), berdasarkan tanggal pembayaran.
+    pembayaranBonList() {
+      // Satu input pembayaran tetap dihitung satu pembayaran/TU, meskipun alokasinya
+      // menyentuh beberapa transaksi atau terbagi ke Pengecer dan Diluar.
+      const map = new Map();
+      (this.pembayaran || []).filter(c => c && c.tgl && Number(c.jumlah) > 0 && ((c.kind || 'P') === 'P' || c.kind === 'D')).forEach(c => {
+        const key = c.grupId ? 'G:' + c.grupId : 'I:' + c.id;
+        if (!map.has(key)) map.set(key, {
+          id: c.grupId ? 'grup-' + c.grupId : c.id, grupId: c.grupId || null,
+          nama: c.nama || '-', tgl: c.tgl, jumlah: 0, metode: c.metode || 'Cash',
+          jenis: c.niat || c.jenis || 'TU', kategori: new Set()
+        });
+        const item = map.get(key);
+        item.jumlah += Number(c.jumlah) || 0;
+        item.kategori.add((c.kind || 'P') === 'D' ? 'Diluar' : 'Pengecer');
+        // Jenis TU/Lunas mengikuti niat pembayaran asal, bukan jumlah transaksi yang terkena alokasi.
+        if ((c.niat || c.jenis) === 'TU') item.jenis = 'TU';
+        else if (item.jenis !== 'TU') item.jenis = c.niat || c.jenis || 'Lunas';
+      });
+      return [...map.values()].map(x => {
+        // Ambil tanggal transaksi yang menjadi sasaran pembayaran, bukan tanggal uang diterima.
+        const tanggal = new Set();
+        (this.pembayaran || []).filter(c => c && (x.grupId ? c.grupId === x.grupId : c.id === x.id)).forEach(c => {
+          const daftar = (c.kind || 'P') === 'D' ? this.trxNamaD(x.nama) : this.trxNama(x.nama);
+          (c.targetIds || []).forEach(id => {
+            const trx = daftar.find(t => String(t.id) === String(id));
+            if (trx && trx.hari) tanggal.add(this.tgl(trx.hari));
+          });
+        });
+        return { ...x, kategori: [...x.kategori].join(' & '), tanggalTransaksi: [...tanggal].sort().join(', ') };
+      }).sort((a, b) => {
+        const urut = this.bonBayarUrut === 'lama' ? 1 : -1;
+        return urut * ((a.tgl || '').localeCompare(b.tgl || '')) || String(a.id).localeCompare(String(b.id));
+      });
+    },
+    pembayaranBonTotal() {
+      return this.pembayaranBonList().reduce((sum, c) => sum + (Number(c.jumlah) || 0), 0);
+    },
+    pembayaranBonBulanList() {
+      return [...new Set(this.pembayaranBonList().map(c => (c.tgl || '').slice(0, 7)).filter(Boolean))].sort();
+    },
+    pembayaranBonBulanAktif() {
+      const list = this.pembayaranBonBulanList();
+      if (this.bonBayarBulan && list.includes(this.bonBayarBulan)) return this.bonBayarBulan;
+      return list.length ? list[list.length - 1] : '';
+    },
+    pembayaranBonBulanLabel() {
+      const bulan = this.pembayaranBonBulanAktif();
+      return bulan ? 'Riwayat bulan ' + this.bulanLabel(bulan) : 'Belum ada riwayat pembayaran';
+    },
+    pembayaranBonTotalBulan() {
+      const bulan = this.pembayaranBonBulanAktif();
+      return this.pembayaranBonList().filter(c => (c.tgl || '').startsWith(bulan)).reduce((sum, c) => sum + (Number(c.jumlah) || 0), 0);
+    },
+    pembayaranBonPerTanggal() {
+      const map = {};
+      const bulan = this.pembayaranBonBulanAktif();
+      this.pembayaranBonList().filter(c => (c.tgl || '').startsWith(bulan)).forEach(c => {
+        const tanggal = c.tgl || '-';
+        if (!map[tanggal]) map[tanggal] = { tanggal, total: 0, items: [] };
+        map[tanggal].items.push(c);
+        map[tanggal].total += Number(c.jumlah) || 0;
+      });
+      return Object.values(map).sort((a, b) => (this.bonBayarUrut === 'lama' ? 1 : -1) * a.tanggal.localeCompare(b.tanggal));
+    },
+    bukaSemuaPembayaranBon(buka) {
+      const status = {};
+      this.pembayaranBonPerTanggal().forEach(g => { status[g.tanggal] = !!buka; });
+      this.bonBayarBuka = status;
+    },
 
     // ===== tagihan (Termasuk Pengecer & Diluar) =====
     tagihanList() {
