@@ -399,6 +399,14 @@
   }
 </style>
 
+<style id="nota-box-warna">
+  /* Kotak tagihan Nota: dibuat khusus agar tidak tertimpa gaya kaca global */
+  .nota-box.nota-box { background-image: none !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  .nota-box.nota-box-lunas.nota-box-lunas { background-color: #ecfdf5 !important; border: 1px solid #6ee7b7 !important; }
+  .nota-box.nota-box-tu.nota-box-tu { background-color: #fff7ed !important; border: 1px solid #fdba74 !important; }
+  .nota-box.nota-box-belum.nota-box-belum { background-color: #fff1f2 !important; border: 1px solid #fda4af !important; }
+  .nota-box.nota-box-kosong.nota-box-kosong { background-color: #fafaf9 !important; border: 1px solid #e7e5e4 !important; }
+</style>
 </head><body class="antialiased" x-data="app()">
 <div class="min-h-screen pb-24 md:pb-12">
 <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-stone-200">
@@ -1734,7 +1742,7 @@
                   </div>
                   <div class="flex gap-3 shrink-0">
                     <button type="button" @click="editBayarModal(r)" class="text-indigo-700 text-xs font-semibold">Edit</button>
-                    <button type="button" @click="hapusBayarModal(r)" class="text-rose-600 text-xs font-semibold">Hapus</button>
+                    <button type="button" @click="hapusBayarModal(r)" x-show="!dipakaiTU(r)" class="text-rose-600 text-xs font-semibold">Hapus</button>
                   </div>
                 </div>
               </template>
@@ -1805,7 +1813,7 @@
                 <div class="flex items-center gap-2.5 shrink-0">
                   <span class="font-bold text-stone-900" x-text="rp(c.jumlah)"></span>
                   <button type="button" @click="editPembayaran(c)" class="text-indigo-700 text-xs font-semibold hover:underline">Edit</button>
-                  <button type="button" @click="ask('Hapus pembayaran ' + rp(c.jumlah) + ' pada ' + tgl(c.tgl) + '?', () => hapusPembayaran(c.id))" class="text-rose-600 text-xs font-semibold hover:underline">Hapus</button>
+                  <button type="button" @click="ask('Hapus pembayaran ' + rp(c.jumlah) + ' pada ' + tgl(c.tgl) + '?', () => hapusPembayaran(c.id))" x-show="!dipakaiTU(c)" class="text-rose-600 text-xs font-semibold hover:underline">Hapus</button>
                 </div>
               </div>
               <p x-show="c.alokasiDetail && c.alokasiDetail.length > 0" class="text-[11px] text-stone-400 mt-1" x-text="'Alokasi: ' + (c.alokasiDetail || []).join(', ')"></p>
@@ -2529,16 +2537,35 @@ function app() {
           ...this.pembayaranNama(m.nama, 'P').map(c => ({ c, side: 'P' })),
           ...this.pembayaranNama(m.nama, 'D').map(c => ({ c, side: 'D' }))
         ];
-        const relevan = ({ c, side }) => {
-          const daftar = side === 'D' ? this.trxNamaD(m.nama) : this.trxNama(m.nama);
-          const ids = Array.isArray(c.ids) ? c.ids : [];
-          return ids.some(id => {
-            const t = daftar.find(x => String(x.id) === String(id));
-            if (!t) return false;
-            if ((c.niat || c.jenis) === 'Lunas') return !!t.lunas && t.lunasPay === c;
-            return (t.aktifs || []).includes(c) || (!!t.lunas && (t.siklus || []).includes(c));
-          });
+        // Siklus aktif saja: jika masih ada transaksi belum lunas, tampilkan
+        // pembayaran yang terkait transaksi tersebut (TU + pelunasan sebelumnya
+        // yang masih membentuk sisa). Jika semua sudah lunas, tampilkan siklus
+        // pelunasan terakhir beserta TU dan pelunasannya.
+        const semuaTrx = [...this.trxNama(m.nama), ...this.trxNamaD(m.nama)];
+        const terbuka = semuaTrx.filter(t => !t.lunas);
+        const idIkut = new Set();
+        const tambahTrx = t => {
+          (t.rincianBayar || []).forEach(r => idIkut.add(String(r.payId)));
+          (t.aktifs || []).forEach(p => idIkut.add(String(p.id)));
+          (t.siklus || []).forEach(p => idIkut.add(String(p.id)));
+          if (t.lunasPay) idIkut.add(String(t.lunasPay.id));
         };
+        if (terbuka.length > 0) {
+          terbuka.forEach(tambahTrx);
+        } else {
+          const lunas = semuaTrx.filter(t => t.lunas && t.lunasPay);
+          if (lunas.length) {
+            const akhir = lunas.reduce((a, b) => {
+              const ta = a.lunasPay.tgl || '', tb = b.lunasPay.tgl || '';
+              return (tb > ta || (tb === ta && Number(b.lunasPay.id) > Number(a.lunasPay.id))) ? b : a;
+            }).lunasPay;
+            lunas.filter(t => t.lunasPay === akhir).forEach(tambahTrx);
+          }
+        }
+        // Ikutkan sisi P/D lain yang berasal dari pembayaran yang sama (grupId)
+        const grupIkut = new Set(semua.filter(x => idIkut.has(String(x.c.id)) && x.c.grupId).map(x => x.c.grupId));
+        semua.forEach(x => { if (x.c.grupId && grupIkut.has(x.c.grupId)) idIkut.add(String(x.c.id)); });
+        const relevan = ({ c }) => idIkut.has(String(c.id));
         const satuOrang = new Map();
         semua.filter(relevan).forEach(({ c }) => {
           const key = c.grupId ? 'G' + c.grupId : 'I' + c.id;
@@ -2570,6 +2597,7 @@ function app() {
         .slice().reverse();
     },
     hapusBayarModal(r) {
+      if (this.dipakaiTU(r)) { alert('TU ini sudah dipakai transaksi. Tidak bisa dihapus, tetapi bisa diedit jumlahnya, atau dibatalkan lewat pelunasan.'); return; }
       const kind = this.modal.kind, ref = this.modal.ref;
       if (kind === 'orang') {
         const nama = this.modal.nama;
@@ -2911,8 +2939,18 @@ function app() {
       if (kind === 'D') this.alokasiNamaD(n); else this.alokasiNama(n);
       this.batalEditPembayaran();
     },
+    // TU dianggap sudah dipakai jika sudah menempel pada transaksi (ids terisi).
+    // Grup yang sama (sisi P/D) ikut terkunci.
+    dipakaiTU(r) {
+      const semua = this.pembayaran || [];
+      const c = semua.find(x => String(x.id) === String(r.id));
+      const grupId = (c && c.grupId) || r.grupId;
+      const grup = grupId ? semua.filter(x => x.grupId === grupId) : (c ? [c] : []);
+      return grup.some(x => (x.niat || x.jenis) === 'TU' && (x.ids || []).length > 0);
+    },
     hapusPembayaran(id) {
       const c = (this.pembayaran || []).find(x => x.id === id);
+      if (c && this.dipakaiTU(c)) { alert('TU ini sudah dipakai transaksi. Tidak bisa dihapus, tetapi bisa diedit jumlahnya, atau dibatalkan lewat pelunasan.'); return; }
       this.pembayaran = (this.pembayaran || []).filter(x => x.id !== id);
       if (this.modal.f.editId === id) this.batalEditPembayaran();
       if (c) this.catat(c.nama, 'Hapus pembayaran ' + this.rp(c.jumlah));
@@ -3339,10 +3377,10 @@ function app() {
     },
     tagihanBoxClass(p) {
       const st = this.statusHariP(p);
-      if (st === 'Lunas') return 'bg-emerald-50 border border-emerald-200';
-      if (st === 'TU') return 'bg-orange-50 border border-orange-200';
-      if (st === 'Belum') return 'bg-rose-50 border border-rose-200';
-      return 'bg-stone-50 border border-stone-200';
+      if (st === 'Lunas') return 'nota-box nota-box-lunas';
+      if (st === 'TU') return 'nota-box nota-box-tu';
+      if (st === 'Belum') return 'nota-box nota-box-belum';
+      return 'nota-box nota-box-kosong';
     },
     hitungPosisiBon() {
       const paper = this.$refs.cetak;
