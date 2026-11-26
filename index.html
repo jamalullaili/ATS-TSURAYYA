@@ -3093,7 +3093,8 @@ function app() {
         const hasTarget = c.selectedScope === true || (Array.isArray(c.targetIds) && c.targetIds.length > 0);
         const pool = list.filter(t => !t.lunas && dibuat.has(String(t.id)) &&
           (!hasTarget || (c.targetIds || []).some(id => String(id) === String(t.id))));
-        if (pool.length === 0) { tambahLot(c, Number(c.jumlah) || 0); return; }
+        // Lunas tanpa tagihan terbuka yang dicentang tidak menjadi saldo (dicek sebagai kelebihan)
+        if (pool.length === 0) return;
 
         const need = pool.reduce((s, t) => s + sisaOf(t), 0);
         const saldoTotal = lots.reduce((s, l) => s + l.sisa, 0);
@@ -3127,7 +3128,7 @@ function app() {
             if (!c.siklusNos.includes(aktif.no)) c.siklusNos.push(aktif.no);
           }
         });
-        tambahLot(c, uang);
+        // Sisa uang Lunas tidak menjadi saldo TU: nominal Lunas harus sama dengan sisa yang dicentang
 
         // Siklus selesai bila semua yang dicentang sudah lunas: tagihan lain yang
         // masih terbuka pindah ke siklus baru.
