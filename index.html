@@ -1164,11 +1164,15 @@
                   <div class="px-4 py-2.5 flex items-center justify-between gap-3">
                     <div class="min-w-0">
                       <p class="font-semibold text-slate-800 text-sm truncate" x-text="c.nama"></p>
-                      <p x-show="c.tanggalTransaksi" class="text-[10px] text-slate-400 mt-0.5" x-text="'Transaksi: ' + c.tanggalTransaksi"></p>
+                      <p class="text-[10px] text-slate-400 mt-0.5" x-text="c.tanggalTransaksi ? 'Transaksi: ' + c.tanggalTransaksi : (c.jenis === 'TU' ? 'Saldo TU, belum dipakai untuk tagihan' : 'Belum terhubung ke transaksi')"></p>
                     </div>
                     <div class="text-right shrink-0">
                       <p class="font-bold text-emerald-700 text-sm whitespace-nowrap" x-text="rp(c.jumlah)"></p>
                       <p class="text-[10px] text-slate-500 mt-0.5" x-text="(c.metode || 'Cash') + ' · ' + (c.jenis || 'TU')"></p>
+                      <div class="flex justify-end gap-3 mt-1 no-print">
+                        <button type="button" @click="bonEditPembayaran(c)" class="text-indigo-700 text-xs font-semibold">Edit</button>
+                        <button type="button" @click="bonHapusPembayaran(c)" class="text-rose-600 text-xs font-semibold">Hapus</button>
+                      </div>
                     </div>
                   </div>
                 </template>
@@ -1742,7 +1746,7 @@
                   </div>
                   <div class="flex gap-3 shrink-0">
                     <button type="button" @click="editBayarModal(r)" class="text-indigo-700 text-xs font-semibold">Edit</button>
-                    <button type="button" @click="hapusBayarModal(r)" x-show="!dipakaiTU(r)" class="text-rose-600 text-xs font-semibold">Hapus</button>
+                    <button type="button" @click="hapusBayarModal(r)" class="text-rose-600 text-xs font-semibold">Hapus</button>
                   </div>
                 </div>
               </template>
@@ -1813,7 +1817,7 @@
                 <div class="flex items-center gap-2.5 shrink-0">
                   <span class="font-bold text-stone-900" x-text="rp(c.jumlah)"></span>
                   <button type="button" @click="editPembayaran(c)" class="text-indigo-700 text-xs font-semibold hover:underline">Edit</button>
-                  <button type="button" @click="ask('Hapus pembayaran ' + rp(c.jumlah) + ' pada ' + tgl(c.tgl) + '?', () => hapusPembayaran(c.id))" x-show="!dipakaiTU(c)" class="text-rose-600 text-xs font-semibold hover:underline">Hapus</button>
+                  <button type="button" @click="ask('Hapus pembayaran ' + rp(c.jumlah) + ' pada ' + tgl(c.tgl) + '?', () => hapusPembayaran(c.id))" class="text-rose-600 text-xs font-semibold hover:underline">Hapus</button>
                 </div>
               </div>
               <p x-show="c.alokasiDetail && c.alokasiDetail.length > 0" class="text-[11px] text-stone-400 mt-1" x-text="'Alokasi: ' + (c.alokasiDetail || []).join(', ')"></p>
@@ -2416,7 +2420,7 @@ function app() {
       // Pengecer dan Diluar selalu memakai satu popup berdasarkan nama orang.
       // Jika orang memiliki kedua jenis transaksi, seluruh tagihan tampil bersama;
       // jika hanya satu jenis, popup tetap sama tanpa mode khusus.
-      if (namaRef) { this.openBayarOrang(namaRef); return; }
+      if (namaRef) { this.openBayarOrang(namaRef, { side: kind === 'pengecer' ? 'P' : 'D', id: ref.id }); return; }
       const info = this.bayarInfo(kind, ref);
       const pilih = {};
       info.items.forEach(i => { if (i.bisa !== false && i.sisa <= 0) pilih[i.id] = true; });
@@ -2482,7 +2486,7 @@ function app() {
       const sebelum = this.pembayaran || [];
       this.pembayaran = sebelum.filter(c => !grup.includes(c));
       this.alokasiNama(m.nama); this.alokasiNamaD(m.nama);
-      this.openBayarOrang(m.nama);
+      this.openBayarOrang(m.nama, m.fokus);
       this.pembayaran = sebelum;
       this.alokasiNama(m.nama); this.alokasiNamaD(m.nama);
       const baru = this.modal;
@@ -2498,7 +2502,7 @@ function app() {
     },
     batalEditBayar() {
       const m = this.modal;
-      if (m.kind === 'orang') { this.openBayarOrang(m.nama); return; }
+      if (m.kind === 'orang') { this.openBayarOrang(m.nama, m.fokus); return; }
       m.items = this.bayarInfo(m.kind, m.ref).items;
       m.f = { tgl: today(), jumlah: '', metode: 'Cash', jenis: 'Lunas', potongan: false, pilih: {}, editId: null };
       m.title = 'Pembayaran - ' + m.nama;
@@ -2516,11 +2520,15 @@ function app() {
       const f = this.modal.f;
       if (f.jenis !== 'Lunas') {
         if (j <= 0) return { teks: '-', ok: false, bisaPotongan: false, selisih: 0, lunas: false };
+        // TU harus menutup tagihan yang ada: tidak boleh tanpa tagihan atau melebihi sisa
+        if (target <= 0) return { teks: 'Tidak ada tagihan', ok: false, bisaPotongan: false, selisih: 0, lunas: false };
         if (j > target) return { teks: 'Melebihi sisa', ok: false, bisaPotongan: false, selisih: 0, lunas: false };
         return { teks: 'TU', ok: true, bisaPotongan: false, selisih: 0, lunas: false };
       }
       const adaPilihan = this.modal.items.some(i => i.bisa !== false && f.pilih[i.id]);
       if (!adaPilihan) return { teks: 'Pilih transaksi', ok: false, bisaPotongan: false, selisih: 0, lunas: false };
+      // Transaksi yang sudah tertutup penuh oleh TU boleh dicentang Lunas tanpa uang tambahan
+      if (target === 0 && j === 0) return { teks: 'Lunas', ok: true, bisaPotongan: false, selisih: 0, lunas: true };
       if (j <= 0) return { teks: '-', ok: false, bisaPotongan: false, selisih: 0, lunas: false };
       if (j > target) return { teks: 'Melebihi sisa', ok: false, bisaPotongan: false, selisih: 0, lunas: false };
       if (selisih === 0) return { teks: 'Lunas', ok: true, bisaPotongan: false, selisih: 0, lunas: true };
@@ -2530,54 +2538,39 @@ function app() {
     riwayatBayarModal() {
       const m = this.modal;
       if (m.kind === 'orang') {
-        // Tampilkan hanya pembayaran yang masih punya keterkaitan nyata dengan
-        // transaksi: TU yang masih aktif/menjadi asal TU transaksi lunas, atau
-        // pembayaran Lunas yang benar-benar melunasi transaksi terpilih.
-        const semua = [
-          ...this.pembayaranNama(m.nama, 'P').map(c => ({ c, side: 'P' })),
-          ...this.pembayaranNama(m.nama, 'D').map(c => ({ c, side: 'D' }))
-        ];
-        // Siklus aktif saja: jika masih ada transaksi belum lunas, tampilkan
-        // pembayaran yang terkait transaksi tersebut (TU + pelunasan sebelumnya
-        // yang masih membentuk sisa). Jika semua sudah lunas, tampilkan siklus
-        // pelunasan terakhir beserta TU dan pelunasannya.
-        const semuaTrx = [...this.trxNama(m.nama), ...this.trxNamaD(m.nama)];
-        const terbuka = semuaTrx.filter(t => !t.lunas);
-        const idIkut = new Set();
-        const tambahTrx = t => {
-          (t.rincianBayar || []).forEach(r => idIkut.add(String(r.payId)));
-          (t.aktifs || []).forEach(p => idIkut.add(String(p.id)));
-          (t.siklus || []).forEach(p => idIkut.add(String(p.id)));
-          if (t.lunasPay) idIkut.add(String(t.lunasPay.id));
-        };
-        if (terbuka.length > 0) {
-          terbuka.forEach(tambahTrx);
-        } else {
-          const lunas = semuaTrx.filter(t => t.lunas && t.lunasPay);
-          if (lunas.length) {
-            const akhir = lunas.reduce((a, b) => {
-              const ta = a.lunasPay.tgl || '', tb = b.lunasPay.tgl || '';
-              return (tb > ta || (tb === ta && Number(b.lunasPay.id) > Number(a.lunasPay.id))) ? b : a;
-            }).lunasPay;
-            lunas.filter(t => t.lunasPay === akhir).forEach(tambahTrx);
-          }
+        // Riwayat = satu siklus. Dibuka dari transaksi yang diklik: siklus transaksi itu.
+        // Tanpa transaksi: siklus yang masih terbuka, atau yang terakhir jika semua lunas.
+        const sisi = { P: this.trxNama(m.nama), D: this.trxNamaD(m.nama) };
+        let side = null, no = null;
+        if (m.fokus) {
+          const t = (sisi[m.fokus.side] || []).find(x => String(x.id) === String(m.fokus.id));
+          if (t && t.siklusNo != null) { side = m.fokus.side; no = t.siklusNo; }
         }
-        // Ikutkan sisi P/D lain yang berasal dari pembayaran yang sama (grupId)
-        const grupIkut = new Set(semua.filter(x => idIkut.has(String(x.c.id)) && x.c.grupId).map(x => x.c.grupId));
-        semua.forEach(x => { if (x.c.grupId && grupIkut.has(x.c.grupId)) idIkut.add(String(x.c.id)); });
-        const relevan = ({ c }) => idIkut.has(String(c.id));
-        const satuOrang = new Map();
-        semua.filter(relevan).forEach(({ c }) => {
-          const key = c.grupId ? 'G' + c.grupId : 'I' + c.id;
-          if (!satuOrang.has(key)) satuOrang.set(key, { ...c, jumlah: 0, _ids: [], niat: c.niat || c.jenis });
-          const r = satuOrang.get(key);
-          r.jumlah += Number(c.jumlah) || 0;
-          r._ids.push(c.id);
-          if ((c.niat || c.jenis) === 'TU') r.niat = 'TU';
-        });
-        return [...satuOrang.values()]
-          .map(r => ({ ...r, jenis: r.niat === 'Lunas' ? 'Lunas' : 'TU' }))
-          .sort((a, b) => (b.tgl || '').localeCompare(a.tgl || '') || (String(b.id) < String(a.id) ? -1 : 1));
+        if (no == null) {
+          const semua = [...sisi.P.map(t => ['P', t]), ...sisi.D.map(t => ['D', t])].filter(([, t]) => t.siklusNo != null);
+          const terbuka = semua.find(([, t]) => !t.lunas);
+          const pilih = terbuka || semua.slice().sort((x, y) => (y[1].siklusNo || 0) - (x[1].siklusNo || 0))[0];
+          if (!pilih) return [];
+          side = pilih[0]; no = pilih[1].siklusNo;
+        }
+        // Satu pembayaran = satu baris dengan jumlah totalnya. Bagian per sisi P/D
+        // yang berasal dari pembayaran yang sama (grupId) digabung lagi.
+        const kunci = c => c.grupId || ('I' + c.id);
+        const inti = new Set(this.pembayaranNama(m.nama, side)
+          .filter(c => (c.siklusNos || []).includes(no)).map(kunci));
+        const peta = new Map();
+        [...this.pembayaranNama(m.nama, 'P'), ...this.pembayaranNama(m.nama, 'D')]
+          .filter(c => inti.has(kunci(c)))
+          .forEach(c => {
+            const k = kunci(c);
+            if (!peta.has(k)) peta.set(k, { ...c, _ids: [], jumlah: 0 });
+            const r = peta.get(k);
+            r.jumlah += Number(c.jumlah) || 0;
+            r._ids.push(c.id);
+          });
+        return [...peta.values()]
+          .map(r => ({ ...r, jenis: r.niat === 'Lunas' || r.jenis === 'Lunas' ? 'Lunas' : 'TU' }))
+          .sort((x, y) => (y.tgl || '').localeCompare(x.tgl || '') || (String(y.id) < String(x.id) ? -1 : 1));
       }
       const relevan = (c, t) => (c.jenis === 'Lunas')
         ? t.lunasPay === c
@@ -2597,7 +2590,6 @@ function app() {
         .slice().reverse();
     },
     hapusBayarModal(r) {
-      if (this.dipakaiTU(r)) { alert('TU ini sudah dipakai transaksi. Tidak bisa dihapus, tetapi bisa diedit jumlahnya, atau dibatalkan lewat pelunasan.'); return; }
       const kind = this.modal.kind, ref = this.modal.ref;
       if (kind === 'orang') {
         const nama = this.modal.nama;
@@ -2939,18 +2931,8 @@ function app() {
       if (kind === 'D') this.alokasiNamaD(n); else this.alokasiNama(n);
       this.batalEditPembayaran();
     },
-    // TU dianggap sudah dipakai jika sudah menempel pada transaksi (ids terisi).
-    // Grup yang sama (sisi P/D) ikut terkunci.
-    dipakaiTU(r) {
-      const semua = this.pembayaran || [];
-      const c = semua.find(x => String(x.id) === String(r.id));
-      const grupId = (c && c.grupId) || r.grupId;
-      const grup = grupId ? semua.filter(x => x.grupId === grupId) : (c ? [c] : []);
-      return grup.some(x => (x.niat || x.jenis) === 'TU' && (x.ids || []).length > 0);
-    },
     hapusPembayaran(id) {
       const c = (this.pembayaran || []).find(x => x.id === id);
-      if (c && this.dipakaiTU(c)) { alert('TU ini sudah dipakai transaksi. Tidak bisa dihapus, tetapi bisa diedit jumlahnya, atau dibatalkan lewat pelunasan.'); return; }
       this.pembayaran = (this.pembayaran || []).filter(x => x.id !== id);
       if (this.modal.f.editId === id) this.batalEditPembayaran();
       if (c) this.catat(c.nama, 'Hapus pembayaran ' + this.rp(c.jumlah));
@@ -3034,20 +3016,21 @@ function app() {
         t => this.totalD(t));
     },
     alokasiInti(list, pays, totalOf) {
-      // TU adalah status global untuk semua transaksi orang ini. Pembayaran TU
-      // mengurangi sisa nominal, tetapi tidak memilih transaksi satu per satu.
-      // Pelunasan hanya menutup transaksi yang dipilih; TU pada transaksi lain
-      // diputus dan kembali menjadi Belum.
+      // Model: TU = saldo orang ini (per tanggal). Tidak menutup tagihan saat dicatat.
+      // Lunas = transaksi yang dicentang (atau semua yang belum lunas bila tanpa pilihan)
+      // dibayar dari saldo TU (tertua dulu), lalu dari uang Lunas.
+      // Tagihan yang dibuat saat siklus masih terbuka masuk siklus itu. Siklus selesai
+      // bila tagihannya sudah Lunas semua; tagihan yang tidak dicentang pindah ke siklus baru.
       pays.forEach(c => {
         if (c.niat === undefined) c.niat = c.jenis === 'Lunas' ? 'Lunas' : 'TU';
         if (c.niat === 'TU') { c.targetIds = []; c.scopeAll = true; }
         c.ids = []; c.alokasiDetail = []; c.grupIds = [];
-        c.tutupSejak = undefined; c.lepas = [];
+        c.tutupSejak = undefined; c.lepas = []; c.siklusNos = [];
       });
       list.forEach(t => {
         t.bayar = ''; t.status = 'Belum'; t.tanggal = ''; t.alloc = 0;
         t.lunas = false; t.potongan = 0; t.rincianBayar = []; t.lastPay = null;
-        t.lunasPay = null; t.aktif = null; t.aktifs = []; t.siklus = [];
+        t.lunasPay = null; t.aktif = null; t.aktifs = []; t.siklus = []; t.siklusNo = null; t.baruSiklus = false;
       });
 
       const ikut = (t, c) => {
@@ -3059,129 +3042,131 @@ function app() {
       };
       const sisaOf = t => Math.max(0, totalOf(t) - t.alloc);
 
-      pays.forEach(c => {
-        let rem = Number(c.jumlah) || 0;
-        const esLunas = c.niat === 'Lunas';
-        const hasTarget = esLunas && (c.selectedScope === true || (Array.isArray(c.targetIds) && c.targetIds.length > 0));
-        const pool = list.filter(t => !t.lunas && (!hasTarget || (c.targetIds || []).some(id => String(id) === String(t.id))));
-        c.grupIds = pool.map(t => t.id);
-        const clearOnly = esLunas && c.selectedScope === true && pool.length === 0;
-        const need = pool.reduce((sum, t) => sum + sisaOf(t), 0);
-        const potonganOk = esLunas && !!c.potongan && (need - rem) > 0 && (need - rem) < 50000;
-        const tutup = esLunas && pool.length > 0 && (rem >= need || potonganOk);
+      // Saldo TU: setiap pembayaran TU adalah lot; Lunas berlebih juga menjadi lot.
+      const lots = [];
+      const tambahLot = (c, sisa) => { if (sisa > 0) lots.push({ c, sisa }); };
+      // Kejadian diurutkan: tagihan dulu, lalu pembayaran, pada tanggal yang sama.
+      const kejadian = [
+        ...list.map(t => ({ k: (t.hari || ''), tipe: 0, t })),
+        ...pays.map(c => ({ k: (c.tgl || ''), tipe: 1, c }))
+      ].sort((a, b) => a.k.localeCompare(b.k) || a.tipe - b.tipe ||
+        ((a.t ? a.t.id : a.c.id) - (b.t ? b.t.id : b.c.id)));
 
-        const bayarBerurutan = () => {
-          for (const t of pool) {
-            if (rem <= 0) break;
-            const take = Math.min(sisaOf(t), rem);
-            if (take > 0) {
-              t.alloc += take; rem -= take;
-              t.rincianBayar.push({ payId: c.id, tgl: c.tgl, jumlah: take, metode: c.metode, jenis: c.niat });
-            }
-            ikut(t, c);
-          }
-        };
+      const siklus = [];
+      let aktif = null;
+      const dibuat = new Set();
+      const bukaSiklus = () => { aktif = { no: siklus.length + 1, trxIds: [] }; siklus.push(aktif); };
+      // TU langsung dipakai untuk tagihan yang terbuka (tertua dulu), termasuk tagihan baru.
+      const pakaiLot = (t) => {
+        if (t.siklusNo == null || t.lunas) return;
+        let butuh = sisaOf(t);
+        for (const l of lots) {
+          if (butuh <= 0) break;
+          if (l.sisa <= 0) continue;
+          const p = Math.min(l.sisa, butuh);
+          l.sisa -= p; butuh -= p; t.alloc += p;
+          t.rincianBayar.push({ payId: l.c.id, tgl: l.c.tgl, jumlah: p, metode: l.c.metode, jenis: l.c.niat });
+          ikut(t, l.c);
+          if (!l.c.siklusNos.includes(t.siklusNo)) l.c.siklusNos.push(t.siklusNo);
+        }
+      };
+      const bagiSaldoKeOpen = () => {
+        list.filter(t => !t.lunas && dibuat.has(String(t.id))).forEach(pakaiLot);
+      };
 
-        if (esLunas) {
-          if (tutup) {
-            bayarBerurutan();
-            pool.forEach(t => {
-              const kurang = sisaOf(t);
-              if (kurang > 0) t.potongan = kurang;
-              t.lunas = true; t.lunasPay = c;
-              t.siklus = [...(t.aktifs || [])];
-              t.aktifs = []; t.aktif = null;
-              ikut(t, c);
-            });
-            // Pelunasan mengakhiri TU sebelumnya untuk semua transaksi yang
-            // tidak dipilih juga. Hapus kaitan riwayat TU pada transaksi itu.
-            list.forEach(t => {
-              if (pool.includes(t) || t.lunas) return;
-              const tuAktif = new Set((t.aktifs || []).map(p => String(p.id)));
-              (t.aktifs || []).forEach(p => {
-                const keep = (p.ids || []).map((id, i) => ({ id, detail: (p.alokasiDetail || [])[i] }))
-                  .filter(x => String(x.id) !== String(t.id));
-                p.ids = keep.map(x => x.id);
-                p.alokasiDetail = keep.map(x => x.detail).filter(x => x !== undefined);
-                p.lepas = [...new Set([...(p.lepas || []), t.id])];
-              });
-              // Lepaskan juga alokasi rupiah dari TU agar transaksi yang tidak
-              // dilunasi benar-benar kembali ke nominal Belum Bayar semula.
-              t.rincianBayar = (t.rincianBayar || []).filter(r => !tuAktif.has(String(r.payId)));
-              t.alloc = t.rincianBayar.reduce((sum, r) => sum + (Number(r.jumlah) || 0), 0);
-              t.lastPay = t.rincianBayar.length ? pays.find(p => String(p.id) === String(t.rincianBayar[t.rincianBayar.length - 1].payId)) || null : null;
-              t.aktifs = []; t.aktif = null; t.potongan = 0;
-            });
-            // TU lama tidak boleh otomatis menempel pada transaksi yang dibuat
-            // setelah peristiwa pelunasan ini.
-            pays.forEach(p => {
-              if (p === c || p.niat !== 'TU' || (p.tgl || '') > (c.tgl || '')) return;
-              p.tutupSejak = c.id;
-            });
-          } else if (clearOnly) {
-            // Catatan Lunas tanpa pilihan pada sisi P/D lain berfungsi untuk
-            // mengakhiri TU sisi tersebut, tanpa melunasi transaksinya.
-            list.forEach(t => {
-              if (t.lunas || !(t.aktifs || []).length) return;
-              const tuAktif = new Set(t.aktifs.map(p => String(p.id)));
-              t.aktifs.forEach(p => {
-                const keep = (p.ids || []).map((id, i) => ({ id, detail: (p.alokasiDetail || [])[i] }))
-                  .filter(x => String(x.id) !== String(t.id));
-                p.ids = keep.map(x => x.id);
-                p.alokasiDetail = keep.map(x => x.detail).filter(x => x !== undefined);
-                p.lepas = [...new Set([...(p.lepas || []), t.id])];
-              });
-              t.rincianBayar = (t.rincianBayar || []).filter(r => !tuAktif.has(String(r.payId)));
-              t.alloc = t.rincianBayar.reduce((sum, r) => sum + (Number(r.jumlah) || 0), 0);
-              t.lastPay = t.rincianBayar.length ? pays.find(p => String(p.id) === String(t.rincianBayar[t.rincianBayar.length - 1].payId)) || null : null;
-              t.aktifs = []; t.aktif = null; t.potongan = 0;
-            });
-            pays.forEach(p => {
-              if (p.niat === 'TU' && (p.tgl || '') <= (c.tgl || '')) p.tutupSejak = c.id;
-            });
+      kejadian.forEach(ev => {
+        if (ev.tipe === 0) {
+          const t = ev.t;
+          if (!aktif) bukaSiklus();
+          aktif.trxIds.push(t.id); t.siklusNo = aktif.no; dibuat.add(String(t.id));
+          pakaiLot(t);
+          return;
+        }
+        const c = ev.c;
+        if (c.niat !== 'Lunas') { tambahLot(c, Number(c.jumlah) || 0); bagiSaldoKeOpen(); return; }
+
+        // Lunas
+        const hasTarget = c.selectedScope === true || (Array.isArray(c.targetIds) && c.targetIds.length > 0);
+        const pool = list.filter(t => !t.lunas && dibuat.has(String(t.id)) &&
+          (!hasTarget || (c.targetIds || []).some(id => String(id) === String(t.id))));
+        if (pool.length === 0) { tambahLot(c, Number(c.jumlah) || 0); return; }
+
+        const need = pool.reduce((s, t) => s + sisaOf(t), 0);
+        const saldoTotal = lots.reduce((s, l) => s + l.sisa, 0);
+        let uang = Number(c.jumlah) || 0;
+        const available = saldoTotal + uang;
+        const potonganOk = !!c.potongan && (need - available) > 0 && (need - available) < 50000;
+
+        pool.forEach(t => {
+          let butuh = sisaOf(t);
+          for (const l of lots) {
+            if (butuh <= 0) break;
+            if (l.sisa <= 0) continue;
+            const p = Math.min(l.sisa, butuh);
+            l.sisa -= p; butuh -= p; t.alloc += p;
+            t.rincianBayar.push({ payId: l.c.id, tgl: l.c.tgl, jumlah: p, metode: l.c.metode, jenis: l.c.niat });
+            ikut(t, l.c);
+            if (!l.c.siklusNos.includes(aktif.no)) l.c.siklusNos.push(aktif.no);
           }
-        } else {
-          // TU membebankan nominal secara berurutan, tetapi status TU diberikan
-          // kepada SEMUA transaksi, termasuk yang tidak menerima alokasi rupiah.
-          bayarBerurutan();
-          pool.forEach(t => {
-            if ((c.lepas || []).some(id => String(id) === String(t.id))) return;
-            if (!(t.aktifs || []).includes(c)) t.aktifs = [...(t.aktifs || []), c];
-            t.aktif = c;
+          if (butuh > 0 && uang > 0) {
+            const p = Math.min(butuh, uang);
+            uang -= p; butuh -= p; t.alloc += p;
+            t.rincianBayar.push({ payId: c.id, tgl: c.tgl, jumlah: p, metode: c.metode, jenis: 'Lunas' });
             ikut(t, c);
-          });
+            if (!c.siklusNos.includes(aktif.no)) c.siklusNos.push(aktif.no);
+          }
+          if (butuh > 0 && potonganOk) { t.potongan = butuh; butuh = 0; }
+          if (butuh <= 0) {
+            t.lunas = true; t.lunasPay = c;
+            // Tagihan yang sudah tertutup TU tetap harus tercatat pada pelunasan ini
+            ikut(t, c);
+            if (!c.siklusNos.includes(aktif.no)) c.siklusNos.push(aktif.no);
+          }
+        });
+        tambahLot(c, uang);
+
+        // Siklus selesai bila semua yang dicentang sudah lunas: tagihan lain yang
+        // masih terbuka pindah ke siklus baru.
+        if (aktif && pool.every(t => t.lunas)) {
+          const sisa = aktif.trxIds.filter(id => !list.find(t => String(t.id) === String(id)).lunas);
+          if (sisa.length) {
+            const baru = { no: siklus.length + 1, trxIds: sisa };
+            siklus.push(baru);
+            sisa.forEach(id => { const tr = list.find(t => String(t.id) === String(id)); tr.siklusNo = baru.no; tr.baruSiklus = true; });
+            aktif.trxIds = aktif.trxIds.filter(id => !sisa.includes(id));
+            aktif = baru;
+          } else {
+            aktif = null;
+          }
         }
       });
 
-      // Transaksi baru setelah TU ikut TU yang masih terbuka. Setelah pelunasan,
-      // TU lama ditutup sehingga transaksi berikutnya kembali Belum.
-      const tuTerbuka = pays.filter(c => c.niat === 'TU' && c.tutupSejak === undefined &&
-        c.grupIds.some(id => { const t = list.find(x => String(x.id) === String(id)); return t && !t.lunas; }));
+      // Status akhir
       list.forEach(t => {
-        if (t.lunas || t.aktif || t.alloc > 0) return;
-        const kandidat = tuTerbuka.filter(c => (c.tgl || '') <= (t.hari || '') &&
-          (c.tutupSejak === undefined || (t.hari || '') <= (pays.find(p => p.id === c.tutupSejak)?.tgl || '')))
-          .sort((a, b) => (b.tgl || '').localeCompare(a.tgl || '') || (b.id - a.id))[0];
-        if (kandidat) {
-          t.aktif = kandidat; t.aktifs = [kandidat]; ikut(t, kandidat);
-        }
-      });
-
-      list.forEach(t => {
-        t.bayar = t.alloc > 0 ? t.alloc : '';
         if (t.lunas) {
           t.status = 'Lunas ' + ((t.lunasPay && t.lunasPay.metode) || 'Cash');
           t.tanggal = (t.lunasPay && t.lunasPay.tgl) || '';
-        } else if (t.aktif || t.alloc > 0) {
-          const ref = t.lastPay || t.aktif;
+          t.aktifs = []; t.aktif = null;
+          t.siklus = pays.filter(p => p.ids.some(id => String(id) === String(t.id)) && p !== t.lunasPay);
+          t.potongan = t.potongan || 0;
+        } else if (t.alloc > 0) {
+          const ref = t.lastPay;
+          t.aktif = ref; t.aktifs = pays.filter(p => p.ids.some(id => String(id) === String(t.id)) && p.niat === 'TU');
           t.status = 'TU ' + ((ref && ref.metode) || 'Cash');
-          t.tanggal = t.lastPay ? t.lastPay.tgl : '';
+          t.tanggal = ref ? ref.tgl : '';
           t.potongan = 0;
         } else {
-          t.status = 'Belum'; t.tanggal = ''; t.potongan = 0;
+          // Tagihan di siklus yang masih terbuka (belum ada Lunas) berstatus TU.
+          // Tagihan yang pindah ke siklus baru setelah Lunas berstatus Belum.
+          t.status = t.baruSiklus ? 'Belum' : 'TU Cash';
+          t.tanggal = ''; t.potongan = 0;
         }
+        t.bayar = t.alloc > 0 ? t.alloc : '';
       });
       pays.forEach(c => { c.jenis = c.niat === 'Lunas' ? 'Lunas' : 'TU'; });
+      pays.forEach(c => { c.sisaTU = (lots.find(l => l.c === c) || { sisa: 0 }).sisa; });
+      // Simpan siklus terbuka sebagai sumber riwayat per siklus
+      this._siklus = siklus;
     },
     migrasiPembayaran() {
       if (Array.isArray(this.pembayaran)) return;
@@ -3604,6 +3589,30 @@ function app() {
       });
       return Object.values(map).sort((a, b) => (this.bonBayarUrut === 'lama' ? 1 : -1) * a.tanggal.localeCompare(b.tanggal));
     },
+    bonFokusPembayaran(c) {
+      // Cari pembayaran asli dari baris Bon, lalu transaksi di siklus yang sama
+      const list = this.pembayaran || [];
+      const grup = c.grupId ? list.filter(x => x.grupId === c.grupId) : list.filter(x => String(x.id) === String(c.id));
+      const x = grup[0];
+      if (!x) return { nama: c.nama, grup, fokus: null };
+      const side = (x.kind || 'P') === 'D' ? 'D' : 'P';
+      const nos = new Set(grup.flatMap(g => g.siklusNos || []));
+      const daftar = side === 'D' ? this.trxNamaD(x.nama) : this.trxNama(x.nama);
+      const t = daftar.find(tr => nos.has(tr.siklusNo));
+      return { nama: x.nama, grup, fokus: t ? { side, id: t.id } : null };
+    },
+    bonEditPembayaran(c) {
+      const { nama, grup, fokus } = this.bonFokusPembayaran(c);
+      if (!grup.length) return;
+      this.openBayarOrang(nama, fokus);
+      this.editBayarOrang({ id: grup[0].id, grupId: grup[0].grupId, jumlah: c.jumlah });
+    },
+    bonHapusPembayaran(c) {
+      const { nama, grup, fokus } = this.bonFokusPembayaran(c);
+      if (!grup.length) return;
+      this.openBayarOrang(nama, fokus);
+      this.hapusBayarModal({ id: grup[0].id, grupId: grup[0].grupId, jumlah: c.jumlah });
+    },
     bukaSemuaPembayaranBon(buka) {
       const status = {};
       this.pembayaranBonPerTanggal().forEach(g => { status[g.tanggal] = !!buka; });
@@ -3812,7 +3821,7 @@ function app() {
       this.alokasiNamaD(nm);
       this.notaIsi();
     },
-    openBayarOrang(nama) {
+    openBayarOrang(nama, fokus = null) {
       // Selalu hitung ulang dari seluruh riwayat pembayaran sebelum menyusun popup.
       // Ini mencegah daftar transaksi memakai sisa/status lama setelah ada pelunasan.
       this.alokasiNama(nama);
@@ -3831,7 +3840,7 @@ function app() {
       const items = [...itemP, ...itemD].sort(urut);
       this.searchModal.open = false;
       this.modal = {
-        open: true, type: 'bayar', kind: 'orang', ref: { jenis: '' }, nama, items, refId: null,
+        open: true, type: 'bayar', kind: 'orang', ref: { jenis: '' }, nama, items, refId: null, fokus,
         title: 'Pembayaran - ' + nama,
         f: { tgl: today(), jumlah: '', metode: 'Cash', jenis: 'Lunas', potongan: false, pilih: {}, editId: null },
         id: null, parent: { nama: nama, pengecer: nama }
@@ -3858,11 +3867,15 @@ function app() {
       const metode = f.metode || 'Cash';
       const niat = jenisLunas ? 'Lunas' : 'TU';
       const grupId = uid();
+      // TU harus menutup tagihan yang ada, jadi tidak ada sisa uang tanpa tagihan
+      const sisaSaldo = 0;
+      const sideUtama = (pakai[0] || bisa[0] || {}).side || 'P';
       ['P', 'D'].forEach(side => {
         const semuaSisi = bisa.filter(it => it.side === side);
         const sub = pakai.filter(it => it.side === side);
-        if (!semuaSisi.length) return;
-        const jumlah = sub.reduce((sum, it) => sum + (bagian[it.id] || 0), 0);
+        const utama = side === sideUtama;
+        if (!semuaSisi.length && !(utama && sisaSaldo > 0)) return;
+        const jumlah = sub.reduce((sum, it) => sum + (bagian[it.id] || 0), 0) + (utama ? sisaSaldo : 0);
         this.pembayaran.push({
           id: uid(), kind: side, nama: m.nama, tgl, jumlah, metode,
           jenis: niat, niat, potongan: false,
