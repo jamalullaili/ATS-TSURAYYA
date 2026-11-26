@@ -2556,8 +2556,12 @@ function app() {
         // Satu pembayaran = satu baris dengan jumlah totalnya. Bagian per sisi P/D
         // yang berasal dari pembayaran yang sama (grupId) digabung lagi.
         const kunci = c => c.grupId || ('I' + c.id);
+        // Pembayaran masuk siklus bila terkait transaksi yang sekarang ada di siklus itu
+        const idSiklus = new Set((side === 'D' ? sisi.D : sisi.P)
+          .filter(t => t.siklusNo === no).map(t => String(t.id)));
         const inti = new Set(this.pembayaranNama(m.nama, side)
-          .filter(c => (c.siklusNos || []).includes(no)).map(kunci));
+          .filter(c => (c.siklusNos || []).includes(no) || (c.ids || []).some(id => idSiklus.has(String(id))))
+          .map(kunci));
         const peta = new Map();
         [...this.pembayaranNama(m.nama, 'P'), ...this.pembayaranNama(m.nama, 'D')]
           .filter(c => inti.has(kunci(c)))
