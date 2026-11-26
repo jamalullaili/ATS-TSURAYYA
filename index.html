@@ -3883,7 +3883,7 @@ function app() {
         const jumlah = sub.reduce((sum, it) => sum + (bagian[it.id] || 0), 0) + (utama ? sisaSaldo : 0);
         this.pembayaran.push({
           id: uid(), kind: side, nama: m.nama, tgl, jumlah, metode,
-          jenis: niat, niat, potongan: false,
+          jenis: niat, niat, potongan: jenisLunas && !!f.potongan,
           targetIds: jenisLunas ? sub.map(it => it.rid) : [],
           scopeAll: !jenisLunas, selectedScope: jenisLunas, grupId
         });
