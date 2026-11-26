@@ -862,8 +862,8 @@
                               </div>
                             </td>
                             <td class="td">
-                              <span x-show="hasBayar(t) && Number(t.bayar) > 0" class="badge inline-block whitespace-nowrap !px-2.5 !py-0.5 !text-[11px] leading-tight" :class="statusClass(t.status)" x-text="(t.status || '-').split(' ')[0]"></span>
-                              <span x-show="(!hasBayar(t) || Number(t.bayar) <= 0)" class="text-xs text-slate-400 italic whitespace-nowrap">Isi jumlah bayar</span>
+                              <span x-show="statusTransaksi(t) !== 'Belum'" class="badge inline-block whitespace-nowrap !px-2.5 !py-0.5 !text-[11px] leading-tight" :class="statusClass(statusTransaksi(t))" x-text="statusTransaksi(t).split(' ')[0]"></span>
+                              <span x-show="statusTransaksi(t) === 'Belum'" class="text-xs text-slate-400 italic whitespace-nowrap">Isi jumlah bayar</span>
                             </td>
                             <td class="td text-right whitespace-nowrap">
                               <button @click="editTrx(t)" class="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block">Edit</button>
@@ -921,8 +921,8 @@
                       </div>
                     </td>
                     <td class="td">
-                      <span x-show="hasBayar(x) && Number(x.bayar) > 0" class="badge inline-block whitespace-nowrap !px-2.5 !py-0.5 !text-[11px] leading-tight" :class="statusClass(x.status)" x-text="(x.status || '-').split(' ')[0]"></span>
-                      <span x-show="!hasBayar(x) || Number(x.bayar) <= 0" class="text-xs text-slate-400 italic whitespace-nowrap">Isi jumlah bayar</span>
+                      <span x-show="statusTransaksi(x) !== 'Belum'" class="badge inline-block whitespace-nowrap !px-2.5 !py-0.5 !text-[11px] leading-tight" :class="statusClass(statusTransaksi(x))" x-text="statusTransaksi(x).split(' ')[0]"></span>
+                      <span x-show="statusTransaksi(x) === 'Belum'" class="text-xs text-slate-400 italic whitespace-nowrap">Isi jumlah bayar</span>
                     </td>
                     <td class="td text-right whitespace-nowrap">
                       <button @click="editDiluar(x)" class="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block mr-2">Edit</button>
@@ -2322,8 +2322,17 @@ function app() {
     },
     bulanLabel(m) { return new Date(m + '-01T00:00:00').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }); },
     hasBayar(r) { return r.bayar !== '' && r.bayar !== null && r.bayar !== undefined; },
-    rowClass(t) { if (!(this.hasBayar(t) && Number(t.bayar) > 0)) return 'hover:bg-slate-50'; if (String(t.jenis || '').startsWith('Lapak')) return 'lapak'; if (this.isLunas(t.status)) return 'lunas'; if (this.isTU(t.status)) return 'tu'; return 'hover:bg-slate-50'; },
-    rowClassD(x) { if (!(this.hasBayar(x) && Number(x.bayar) > 0)) return 'hover:bg-slate-50'; if (this.isLunas(x.status)) return 'lunas'; if (this.isTU(x.status)) return 'tu'; return 'hover:bg-slate-50'; },
+    // Satu sumber status untuk Penjualan dan popup Bayar.
+    // Status ditentukan dari hasil alokasi yang dihitung ulang oleh alokasiInti.
+    statusTransaksi(t) {
+      if (!t) return 'Belum';
+      const metode = (t.lastPay && t.lastPay.metode) || (t.lunasPay && t.lunasPay.metode) || (/ Tf$/.test(t.status || '') ? 'Tf' : 'Cash');
+      if (t.lunas) return 'Lunas ' + metode;
+      if ((Number(t.alloc) || 0) > 0) return 'TU ' + metode;
+      return 'Belum';
+    },
+    rowClass(t) { if (String(t.jenis || '').startsWith('Lapak')) return 'lapak'; const s = this.statusTransaksi(t); if (this.isLunas(s)) return 'lunas'; if (this.isTU(s)) return 'tu'; return 'hover:bg-slate-50'; },
+    rowClassD(x) { const s = this.statusTransaksi(x); if (this.isLunas(s)) return 'lunas'; if (this.isTU(s)) return 'tu'; return 'hover:bg-slate-50'; },
     isLunas(s) { return s === 'Lunas Cash' || s === 'Lunas Tf'; },
     isTU(s) { return s === 'TU Cash' || s === 'TU Tf'; },
     statusClass(s) { if (this.isLunas(s)) return 'bg-emerald-100 text-emerald-800'; if (this.isTU(s)) return 'bg-orange-100 text-orange-800'; return 'bg-rose-100 text-rose-800'; },
@@ -2392,7 +2401,7 @@ function app() {
             .filter(x => !x.lunas)
             .sort((a, b) => (a.hari || '').localeCompare(b.hari || '') || (a.id - b.id))
             .map(x => ({
-              id: x.id, hari: x.hari, sisa: this.sisaD(x), status: this.isTU(x.status) ? 'TU' : 'Belum', bisa: true,
+              id: x.id, hari: x.hari, sisa: this.sisaD(x), status: this.statusTransaksi(x).split(' ')[0], bisa: true,
               label: this.tgl(x.hari) + ' · ' + ((x.items || []).map(i => i.nama).filter(Boolean).join(', ') || 'Diluar')
             }))
         };
@@ -2405,7 +2414,7 @@ function app() {
           .sort((a, b) => (a.hari || '').localeCompare(b.hari || '') || (a.id - b.id))
           .map(t => ({
             id: t.id, hari: t.hari, sisa: this.sisaT(t),
-            status: this.isTU(t.status) ? 'TU' : 'Belum', bisa: true,
+            status: this.statusTransaksi(t).split(' ')[0], bisa: true,
             label: this.tgl(t.hari) + ' · ' + (t.barang || '-')
           }))
       };
@@ -3161,9 +3170,9 @@ function app() {
           t.tanggal = ref ? ref.tgl : '';
           t.potongan = 0;
         } else {
-          // Tagihan di siklus yang masih terbuka (belum ada Lunas) berstatus TU.
-          // Tagihan yang pindah ke siklus baru setelah Lunas berstatus Belum.
-          t.status = t.baruSiklus ? 'Belum' : 'TU Cash';
+          // Tanpa alokasi pembayaran, transaksi belum memiliki pembayaran TU.
+          // Jangan memberi status TU secara otomatis hanya karena siklusnya terbuka.
+          t.status = 'Belum';
           t.tanggal = ''; t.potongan = 0;
         }
         t.bayar = t.alloc > 0 ? t.alloc : '';
@@ -3836,11 +3845,11 @@ function app() {
         // Transaksi dengan sisa Rp0 tetap ditampilkan jika statusnya TU.
         // TU bukan Lunas; transaksi hanya dikeluarkan setelah benar-benar Lunas.
         .filter(t => !t.lunas && !String(t.jenis || '').startsWith('Lapak') && (this.sisaT(t) > 0 || this.isTU(t.status)))
-        .map(t => ({ id: 'P' + t.id, side: 'P', rid: t.id, hari: t.hari, sisa: this.sisaT(t), status: this.isTU(t.status) ? 'TU' : 'Belum', bisa: true,
+        .map(t => ({ id: 'P' + t.id, side: 'P', rid: t.id, hari: t.hari, sisa: this.sisaT(t), status: this.statusTransaksi(t).split(' ')[0], bisa: true,
           label: this.tgl(t.hari) + ' · ' + (t.barang || '-') }));
       const itemD = this.trxNamaD(nama)
         .filter(x => !x.lunas && (this.sisaD(x) > 0 || this.isTU(x.status)))
-        .map(x => ({ id: 'D' + x.id, side: 'D', rid: x.id, hari: x.hari, sisa: this.sisaD(x), status: this.isTU(x.status) ? 'TU' : 'Belum', bisa: true,
+        .map(x => ({ id: 'D' + x.id, side: 'D', rid: x.id, hari: x.hari, sisa: this.sisaD(x), status: this.statusTransaksi(x).split(' ')[0], bisa: true,
           label: this.tgl(x.hari) + ' · ' + ((x.items || []).map(i => i.nama).filter(Boolean).join(', ') || 'Diluar') }));
       const items = [...itemP, ...itemD].sort(urut);
       this.searchModal.open = false;
