@@ -2328,7 +2328,7 @@ function app() {
       if (!t) return 'Belum';
       const metode = (t.lastPay && t.lastPay.metode) || (t.lunasPay && t.lunasPay.metode) || (/ Tf$/.test(t.status || '') ? 'Tf' : 'Cash');
       if (t.lunas) return 'Lunas ' + metode;
-      if ((Number(t.alloc) || 0) > 0) return 'TU ' + metode;
+      if (t.siklusTU || (Number(t.alloc) || 0) > 0) return 'TU ' + metode;
       return 'Belum';
     },
     rowClass(t) { if (String(t.jenis || '').startsWith('Lapak')) return 'lapak'; const s = this.statusTransaksi(t); if (this.isLunas(s)) return 'lunas'; if (this.isTU(s)) return 'tu'; return 'hover:bg-slate-50'; },
@@ -3068,7 +3068,7 @@ function app() {
       const siklus = [];
       let aktif = null;
       const dibuat = new Set();
-      const bukaSiklus = () => { aktif = { no: siklus.length + 1, trxIds: [] }; siklus.push(aktif); };
+      const bukaSiklus = () => { aktif = { no: siklus.length + 1, trxIds: [], hasTU: false, tuMetode: 'Cash' }; siklus.push(aktif); };
       // TU langsung dipakai untuk tagihan yang terbuka (tertua dulu), termasuk tagihan baru.
       const pakaiLot = (t) => {
         if (t.siklusNo == null || t.lunas) return;
@@ -3096,7 +3096,17 @@ function app() {
           return;
         }
         const c = ev.c;
-        if (c.niat !== 'Lunas') { tambahLot(c, Number(c.jumlah) || 0); bagiSaldoKeOpen(); return; }
+        if (c.niat !== 'Lunas') {
+          // Begitu ada satu pembayaran TU, seluruh transaksi dalam siklus aktif
+          // (termasuk transaksi baru berikutnya) berstatus TU sampai siklus dilunasi.
+          if (!aktif) bukaSiklus();
+          aktif.hasTU = true;
+          aktif.tuMetode = c.metode || aktif.tuMetode || 'Cash';
+          if (!c.siklusNos.includes(aktif.no)) c.siklusNos.push(aktif.no);
+          tambahLot(c, Number(c.jumlah) || 0);
+          bagiSaldoKeOpen();
+          return;
+        }
 
         // Lunas
         const hasTarget = c.selectedScope === true || (Array.isArray(c.targetIds) && c.targetIds.length > 0);
@@ -3144,7 +3154,7 @@ function app() {
         if (aktif && pool.every(t => t.lunas)) {
           const sisa = aktif.trxIds.filter(id => !list.find(t => String(t.id) === String(id)).lunas);
           if (sisa.length) {
-            const baru = { no: siklus.length + 1, trxIds: sisa };
+            const baru = { no: siklus.length + 1, trxIds: sisa, hasTU: !!aktif.hasTU, tuMetode: aktif.tuMetode || 'Cash' };
             siklus.push(baru);
             sisa.forEach(id => { const tr = list.find(t => String(t.id) === String(id)); tr.siklusNo = baru.no; tr.baruSiklus = true; });
             aktif.trxIds = aktif.trxIds.filter(id => !sisa.includes(id));
@@ -3155,18 +3165,23 @@ function app() {
         }
       });
 
-      // Status akhir
+      // Status akhir: satu TU menandai seluruh transaksi pada siklus itu sebagai TU.
+      const siklusByNo = new Map(siklus.map(sc => [sc.no, sc]));
       list.forEach(t => {
+        const sc = siklusByNo.get(t.siklusNo);
+        t.siklusTU = !!(sc && sc.hasTU);
         if (t.lunas) {
           t.status = 'Lunas ' + ((t.lunasPay && t.lunasPay.metode) || 'Cash');
           t.tanggal = (t.lunasPay && t.lunasPay.tgl) || '';
           t.aktifs = []; t.aktif = null;
           t.siklus = pays.filter(p => p.ids.some(id => String(id) === String(t.id)) && p !== t.lunasPay);
           t.potongan = t.potongan || 0;
-        } else if (t.alloc > 0) {
+        } else if (t.alloc > 0 || t.siklusTU) {
           const ref = t.lastPay;
-          t.aktif = ref; t.aktifs = pays.filter(p => p.ids.some(id => String(id) === String(t.id)) && p.niat === 'TU');
-          t.status = 'TU ' + ((ref && ref.metode) || 'Cash');
+          t.aktif = ref || null;
+          t.aktifs = pays.filter(p => p.niat === 'TU' && (p.siklusNos || []).includes(t.siklusNo));
+          t.status = 'TU ' + ((ref && ref.metode) || (sc && sc.tuMetode) || 'Cash');
+          // Transaksi baru yang ikut siklus TU tidak dibuatkan riwayat pembayaran palsu.
           t.tanggal = ref ? ref.tgl : '';
           t.potongan = 0;
         } else {
