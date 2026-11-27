@@ -639,13 +639,13 @@
                 <div>
                   <div class="px-5 py-3.5 text-white" :style="{ background: warnaNama(card.nama) }" flex items-center justify-between gap-2">
                     <div>
-                      <p class="text-[10px] uppercase tracking-wider text-sky-200 font-semibold">Setoran Pengirim</p>
+                      <p class="text-xs uppercase tracking-wider text-sky-200 font-semibold">Setoran Pengirim</p>
                       <h3 class="font-bold text-base leading-tight" x-text="card.nama"></h3>
                     </div>
                     
                   </div>
                   <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
+                    <table class="w-full text-sm">
                       <thead>
                         <tr class="bg-slate-50 border-b border-slate-200">
                           <th class="th !py-2">Tanggal</th>
@@ -656,21 +656,21 @@
                       <tbody class="divide-y divide-slate-100">
                         <template x-for="r in card.rows" :key="r.hari + '-' + r.pId">
                           <tr class="hover:bg-amber-50/60 cursor-pointer transition" @click="bukaAndScroll(r.hari, 'nota', 'setoran-card-' + r.pId)">
-                            <td class="td !py-2 font-medium text-slate-700 whitespace-nowrap" x-text="dmy(r.hari)"></td>
+                            <td class="td !py-2 font-medium text-slate-700 whitespace-nowrap text-sm" x-text="dmy(r.hari)"></td>
                             
-                            <td class="td !py-2 text-right font-semibold text-slate-900 whitespace-nowrap"><span x-text="rp(r.tagihan)"></span><span x-show="setorHariTxt(r.nama, r.hari)" class="block text-[10px] font-medium text-rose-700 leading-tight mt-0.5" x-text="setorHariTxt(r.nama, r.hari)"></span></td>
+                            <td class="td !py-2 text-right font-semibold text-slate-900 whitespace-nowrap text-base"><span x-text="rp(r.tagihan)"></span><span x-show="setorHariTxt(r.nama, r.hari)" class="block text-xs font-medium text-rose-700 leading-tight mt-0.5" x-text="setorHariTxt(r.nama, r.hari)"></span></td>
                           </tr>
                         </template>
                       </tbody>
-                      <tfoot class="text-xs border-t-2 border-slate-300">
-                        <tr class="bg-slate-50 font-bold text-[#0b2f5b]">
+                      <tfoot class="text-sm border-t-2 border-slate-300">
+                        <tr class="bg-slate-50 font-bold text-[#0b2f5b] text-base">
                           <td colspan="1" class="px-4 py-2 text-right uppercase">Jumlah Tagihan</td>
                           <td class="px-4 py-2 text-right whitespace-nowrap" x-text="rp(card.totalTagihan)"></td>
                         </tr>
                         <template x-for="s in card.payments" :key="s.id">
-                          <tr class="text-slate-700 border-t border-slate-200/70 bg-emerald-50/30"><td colspan="1" class="px-4 py-1.5 text-right align-middle text-xs">TU - <span x-text="dmy(s.tanggal)"></span></td><td class="px-4 py-1.5 text-right font-semibold text-slate-800 whitespace-nowrap align-middle text-xs" x-text="rp(s.jumlah)"></td></tr>
+                          <tr class="text-slate-700 border-t border-slate-200/70 bg-emerald-50/30"><td colspan="1" class="px-4 py-1.5 text-right align-middle text-sm">TU - <span x-text="dmy(s.tanggal)"></span></td><td class="px-4 py-1.5 text-right font-bold text-slate-800 whitespace-nowrap align-middle text-sm" x-text="rp(s.jumlah)"></td></tr>
                         </template>
-                        <tr class="bg-rose-50/70 font-extrabold text-rose-700 border-t border-slate-300 text-sm">
+                        <tr class="bg-rose-50/70 font-bold text-rose-700 border-t border-slate-300 text-base">
                           <td colspan="1" class="px-4 py-2.5 text-right uppercase">Sisa Tagihan</td>
                           <td class="px-4 py-2.5 text-right whitespace-nowrap" x-text="rp(card.sisa)"></td>
                         </tr>
@@ -687,13 +687,13 @@
                 <div>
                   <div class="px-5 py-3.5 bg-amber-700 text-white flex items-center justify-between gap-2">
                     <div>
-                      <p class="text-[10px] uppercase tracking-wider text-amber-200 font-semibold">Setoran Gabungan</p>
+                      <p class="text-xs uppercase tracking-wider text-amber-200 font-semibold">Setoran Gabungan</p>
                       <h3 class="font-bold text-base leading-tight">Centengan Belum Lunas</h3>
                     </div>
                     
                   </div>
                   <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
+                    <table class="w-full text-sm">
                       <thead>
                         <tr class="bg-amber-50/70 border-b border-amber-200/70">
                           <th class="th !py-2">Tanggal</th>
@@ -704,23 +704,23 @@
                       <tbody class="divide-y divide-slate-100">
                         <template x-for="r in setorBelumGrouped().centenganCard.rows" :key="r.nama + '-' + r.hari + '-' + r.pId">
                           <tr class="hover:bg-amber-50/60 cursor-pointer transition" @click="bukaAndScroll(r.hari, 'nota', 'setoran-card-' + r.pId)">
-                            <td class="td !py-2 font-medium text-slate-700 whitespace-nowrap" x-text="dmy(r.hari)"></td>
+                            <td class="td !py-2 font-medium text-slate-700 whitespace-nowrap text-sm" x-text="dmy(r.hari)"></td>
                             <td class="td !py-2 font-semibold text-slate-800">
                               <span x-text="r.nama"></span>
-                              <span x-show="r.ket" class="block text-[10px] font-normal text-slate-500" x-text="r.ket"></span>
+                              <span x-show="r.ket" class="block text-xs font-normal text-slate-500" x-text="r.ket"></span>
                             </td>
-                            <td class="td !py-2 text-right font-semibold text-slate-900 whitespace-nowrap"><span x-text="rp(r.tagihan)"></span><template x-for="t in (r.tu || [])" :key="t.tgl + '-' + t.jumlah"><span class="block text-[10px] font-medium text-emerald-700 leading-tight mt-0.5" x-text="'TU - ' + dmy(t.tgl) + ' · ' + rp(t.jumlah)"></span></template><span x-show="(r.tu || []).length > 0" class="block text-[10px] font-medium text-slate-500 leading-tight mt-0.5" x-text="'sisa ' + rp(r.sisa)"></span></td>
+                            <td class="td !py-2 text-right font-semibold text-slate-900 whitespace-nowrap text-base"><span x-text="rp(r.tagihan)"></span><template x-for="t in (r.tu || [])" :key="t.tgl + '-' + t.jumlah"><span class="block text-xs font-medium text-emerald-700 leading-tight mt-0.5" x-text="'TU - ' + dmy(t.tgl) + ' · ' + rp(t.jumlah)"></span></template><span x-show="(r.tu || []).length > 0" class="block text-xs font-medium text-slate-500 leading-tight mt-0.5" x-text="'sisa ' + rp(r.sisa)"></span></td>
                           </tr>
                         </template>
                       </tbody>
-                      <tfoot class="text-xs border-t-2 border-slate-300">
-                        <tr class="bg-slate-50 font-bold text-[#0b2f5b]">
+                      <tfoot class="text-sm border-t-2 border-slate-300">
+                        <tr class="bg-slate-50 font-bold text-[#0b2f5b] text-base">
                           <td colspan="2" class="px-4 py-2 text-right uppercase">Jumlah Tagihan</td>
                           <td class="px-4 py-2 text-right whitespace-nowrap" x-text="rp(setorBelumGrouped().centenganCard.totalTagihan)"></td>
                         </tr>
                         
                         
-                        <tr class="bg-rose-50/70 font-extrabold text-rose-700 border-t border-slate-300 text-sm">
+                        <tr class="bg-rose-50/70 font-bold text-rose-700 border-t border-slate-300 text-base">
                           <td colspan="2" class="px-4 py-2.5 text-right uppercase">Sisa Tagihan</td>
                           <td class="px-4 py-2.5 text-right whitespace-nowrap" x-text="rp(setorBelumGrouped().centenganCard.sisa)"></td>
                         </tr>
@@ -741,39 +741,39 @@
         <button type="button" @click="belumExpanded = !belumExpanded" :aria-expanded="belumExpanded.toString()" class="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-sm flex items-center gap-3 text-left hover:border-slate-300 transition">
           <span class="h-10 w-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-user-clock text-lg" aria-hidden="true"></i></span>
           <span class="min-w-0 flex-1">
-            <span class="block text-sm font-bold text-slate-900">Belum Bayar &amp; TU</span>
+            <span class="block text-base font-bold text-slate-900">Belum Bayar &amp; TU</span>
           </span>
-          <span class="text-[10px] font-semibold text-slate-500 shrink-0" x-text="belumExpanded ? 'Tutup' : 'Lihat semua'"></span>
-          <i class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform" :class="belumExpanded ? 'rotate-180' : ''" aria-hidden="true"></i>
+          <span class="text-xs font-semibold text-slate-500 shrink-0" x-text="belumExpanded ? 'Tutup' : 'Lihat semua'"></span>
+          <i class="fa-solid fa-chevron-down text-sm text-slate-400 transition-transform" :class="belumExpanded ? 'rotate-180' : ''" aria-hidden="true"></i>
         </button>
         <div x-show="belumExpanded" x-cloak x-transition class="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-3">
           <template x-for="x in tagihanListHari()" :key="x.nama">
-            <button type="button" @click="bayarDariBon(x.nama)" class="max-w-full truncate px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition" x-text="x.nama"></button>
+            <button type="button" @click="bayarDariBon(x.nama)" class="max-w-full truncate px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold transition" x-text="x.nama"></button>
           </template>
         </div>
 
         <!-- Banner Pemilih Tanggal Penjualan -->
         <div class="card p-4 bg-amber-50/70 border-amber-200 flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2">
-            <span class="text-xs uppercase tracking-wider font-bold text-amber-900">Tanggal Transaksi Penjualan:</span>
+            <span class="text-sm uppercase tracking-wider font-bold text-amber-900">Tanggal Transaksi Penjualan:</span>
             <span class="font-extrabold text-stone-900 text-base" x-text="tgl(currentDay)"></span>
           </div>
           <div class="flex items-center gap-2">
-            <label class="text-xs font-semibold text-stone-700">Ubah Tanggal:</label>
-            <input type="date" x-model="currentDay" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-sm font-bold bg-white">
+            <label class="text-sm font-semibold text-stone-700">Ubah Tanggal:</label>
+            <input type="date" x-model="currentDay" @change="setDay(currentDay)" class="inp !w-auto !py-1 text-base font-bold bg-white">
           </div>
         </div>
 
         <div class="card p-3 space-y-2">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Navigasi cepat</p>
-            <button @click="openPengirim()" class="btn btn-navy !py-1.5 !px-3 !text-xs">+ Pengirim</button>
+            <p class="text-sm font-bold uppercase tracking-wider text-slate-500">Navigasi cepat</p>
+            <button @click="openPengirim()" class="btn btn-navy !py-1.5 !px-3 !text-sm">+ Pengirim</button>
           </div>
           <div class="flex flex-wrap gap-2">
             <template x-for="p in dayPengirim()" :key="'nav-p-'+p.id">
-              <button @click="pilihNavigasi('pengirim-card-'+p.id)" :class="navAktif === 'pengirim-card-'+p.id ? 'border-sky-700 bg-sky-700 text-white ring-2 ring-sky-200 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-sky-400 hover:bg-sky-50'" class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition" x-text="p.nama"></button>
+              <button @click="pilihNavigasi('pengirim-card-'+p.id)" :class="navAktif === 'pengirim-card-'+p.id ? 'border-sky-700 bg-sky-700 text-white ring-2 ring-sky-200 shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-sky-400 hover:bg-sky-50'" class="rounded-lg border px-3 py-1.5 text-sm font-semibold transition" x-text="p.nama"></button>
             </template>
-            <button @click="pilihNavigasi('section-diluar')" :class="navAktif === 'section-diluar' ? 'border-amber-700 bg-amber-700 text-white ring-2 ring-amber-200 shadow-sm' : 'border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100'" class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition">Diluar</button>
+            <button @click="pilihNavigasi('section-diluar')" :class="navAktif === 'section-diluar' ? 'border-amber-700 bg-amber-700 text-white ring-2 ring-amber-200 shadow-sm' : 'border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100'" class="rounded-lg border px-3 py-1.5 text-sm font-semibold transition">Diluar</button>
           </div>
         </div>
 
@@ -787,11 +787,11 @@
                     <span x-text="p.nama"></span>
                     <span x-show="p.jenis === 'Centengan'" class="block w-fit mt-1 badge bg-amber-300 text-amber-900">CENTENGAN</span>
                   </p>
-                  <div class="text-xs text-sky-200 leading-snug" x-show="p.jenis !== 'Centengan'"><p>Ongkos : <span class="font-semibold text-white" x-text="rp(p.ongkos)"></span></p><p><span class="font-semibold text-white" x-text="rp(ongkosKg(p))"></span> /kg</p></div>
+                  <div class="text-sm text-sky-200 leading-snug" x-show="p.jenis !== 'Centengan'"><p>Ongkos : <span class="font-semibold text-white" x-text="rp(p.ongkos)"></span></p><p><span class="font-semibold text-white" x-text="rp(ongkosKg(p))"></span> /kg</p></div>
                 </div>
               </div>
               <div class="flex flex-col gap-1.5 shrink-0">
-                <button @click="editPengirim(p)" class="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block">Edit</button>
+                <button @click="editPengirim(p)" class="px-3 py-1 rounded-lg text-sm font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block">Edit</button>
               </div>
             </div>
 
@@ -799,8 +799,8 @@
               <!-- barang -->
               <div>
                 <div class="flex items-center justify-between mb-2 px-4 pt-4">
-                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Barang masuk</h4>
-                  <button @click="openBarang(p)" class="btn btn-soft !py-1.5 !text-xs">+ Tambah barang</button>
+                  <h4 class="text-sm font-bold uppercase tracking-wider text-slate-500">Barang masuk</h4>
+                  <button @click="openBarang(p)" class="btn btn-soft !py-1.5 !text-sm">+ Tambah barang</button>
                 </div>
                 <div class="overflow-x-auto">
                   <table class="w-full">
@@ -808,20 +808,20 @@
                     <tbody>
                       <template x-for="(b, i) in dayBarang(p)" :key="b.id">
                         <tr @click="lompatKe('barang-section-'+b.id)" class="cursor-pointer hover:bg-sky-50/70 transition-colors" :title="'Klik untuk melihat transaksi '+b.nama">
-                          <td class="td text-center text-xs text-slate-500" x-text="i + 1"></td>
+                          <td class="td text-center text-sm text-slate-500" x-text="i + 1"></td>
                           <td class="td" x-text="b.nama"></td>
                           <td class="td" x-text="b.dus"></td>
                           <td class="td" x-text="b.qty"></td>
                           <td class="td" x-text="rp(b.modal)"></td>
                           <td class="td text-right whitespace-nowrap">
-                            <button @click.stop="editBarang(b)" class="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block">Edit</button>
+                            <button @click.stop="editBarang(b)" class="px-3 py-1 rounded-lg text-sm font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block">Edit</button>
                           </td>
                         </tr>
                       </template>
-                      <tr x-show="dayBarang(p).length === 0"><td colspan="6" class="td text-center text-slate-400 italic text-xs">Belum ada barang masuk.</td></tr>
+                      <tr x-show="dayBarang(p).length === 0"><td colspan="6" class="td text-center text-slate-400 italic text-sm">Belum ada barang masuk.</td></tr>
                     </tbody>
-                    <tfoot class="bg-slate-50 font-bold text-sm">
-                      <tr><td colspan="2" class="td text-right text-xs uppercase text-slate-500">Total</td><td class="td" x-text="num(sumDus(p))"></td><td class="td" x-text="num(sumQtyBarang(p))"></td><td colspan="2" class="td"></td></tr>
+                    <tfoot class="bg-slate-50 font-bold text-base">
+                      <tr><td colspan="2" class="td text-right text-sm uppercase text-slate-500">Total</td><td class="td" x-text="num(sumDus(p))"></td><td class="td" x-text="num(sumQtyBarang(p))"></td><td colspan="2" class="td"></td></tr>
                     </tfoot>
                   </table>
                 </div>
@@ -833,9 +833,9 @@
                   <div class="px-4 pt-3 pb-2 flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p class="font-bold text-slate-900" x-text="b.nama"></p>
-                      <p class="text-xs text-slate-500"><span x-text="b.dus ? b.dus + ' dus' : ''"></span><span x-text="b.qty ? ' &middot; ' + b.qty : ''"></span></p>
+                      <p class="text-sm text-slate-500"><span x-text="b.dus ? b.dus + ' dus' : ''"></span><span x-text="b.qty ? ' &middot; ' + b.qty : ''"></span></p>
                     </div>
-                    <button @click="openTrx(p, b)" class="btn btn-navy !py-1.5 !text-xs">+ Pengecer</button>
+                    <button @click="openTrx(p, b)" class="btn btn-navy !py-1.5 !text-sm">+ Pengecer</button>
                   </div>
                   <div class="overflow-x-auto">
                     <table class="w-full">
@@ -843,7 +843,7 @@
                       <tbody>
                         <template x-for="(t, i) in dayTrx(p, b)" :key="t.id">
                           <tr :id="'trx-row-' + t.id" :class="rowClass(t)">
-                            <td class="td text-center text-xs text-slate-500" x-text="i + 1"></td>
+                            <td class="td text-center text-sm text-slate-500" x-text="i + 1"></td>
                             <td class="td font-semibold min-w-[7rem]">
                               <span x-text="String(t.jenis || '').startsWith('Lapak') ? t.jenis : t.pengecer"></span>
                             </td>
@@ -853,28 +853,28 @@
                             <td class="td">
                               <div class="flex items-center gap-2 whitespace-nowrap">
                                 <div x-show="hasBayar(t) && Number(t.bayar) > 0">
-                                  <span class="text-sm font-semibold block leading-tight" x-text="rp(t.bayar)"></span>
-                                  <span x-show="t.tanggal && !isTU(t.status) && !String(t.jenis || '').startsWith('Lapak')" class="text-[10px] text-slate-500 block leading-tight mt-0.5" x-text="tgl(t.tanggal)"></span>
-                                  <span x-show="isTU(t.status) && t.tanggal && !String(t.jenis || '').startsWith('Lapak')" class="text-[10px] text-slate-500 block leading-tight mt-0.5" x-text="'TU · sisa ' + rp(sisaT(t)) + ' · ' + tgl(t.tanggal)"></span>
-                                  <span x-show="Number(t.potongan) > 0" class="text-[11px] font-medium text-emerald-700 block leading-tight mt-0.5" x-text="'Potongan ' + rp(t.potongan)"></span>
+                                  <span class="text-base font-semibold block leading-tight" x-text="rp(t.bayar)"></span>
+                                  <span x-show="t.tanggal && !isTU(t.status) && !String(t.jenis || '').startsWith('Lapak')" class="text-xs text-slate-500 block leading-tight mt-0.5" x-text="tgl(t.tanggal)"></span>
+                                  <span x-show="isTU(t.status) && t.tanggal && !String(t.jenis || '').startsWith('Lapak')" class="text-xs text-slate-500 block leading-tight mt-0.5" x-text="'TU · sisa ' + rp(sisaT(t)) + ' · ' + tgl(t.tanggal)"></span>
+                                  <span x-show="Number(t.potongan) > 0" class="text-xs font-medium text-emerald-700 block leading-tight mt-0.5" x-text="'Potongan ' + rp(t.potongan)"></span>
                                 </div>
-                                <button x-show="!String(t.jenis || '').startsWith('Lapak')" @click="openBayar('pengecer', t)" class="btn btn-navy !py-1 !px-3 !text-xs">+ Bayar</button>
+                                <button x-show="!String(t.jenis || '').startsWith('Lapak')" @click="openBayar('pengecer', t)" class="btn btn-navy !py-1 !px-3 !text-sm">+ Bayar</button>
                               </div>
                             </td>
                             <td class="td">
-                              <span x-show="statusTransaksi(t) !== 'Belum'" class="badge inline-block whitespace-nowrap !px-2.5 !py-0.5 !text-[11px] leading-tight" :class="statusClass(statusTransaksi(t))" x-text="statusTransaksi(t).split(' ')[0]"></span>
-                              <span x-show="statusTransaksi(t) === 'Belum'" class="text-xs text-slate-400 italic whitespace-nowrap">Isi jumlah bayar</span>
+                              <span x-show="statusTransaksi(t) !== 'Belum'" class="badge inline-block whitespace-nowrap !px-2.5 !py-0.5 !text-xs leading-tight" :class="statusClass(statusTransaksi(t))" x-text="statusTransaksi(t).split(' ')[0]"></span>
+                              <span x-show="statusTransaksi(t) === 'Belum'" class="text-sm text-slate-400 italic whitespace-nowrap">Isi jumlah bayar</span>
                             </td>
                             <td class="td text-right whitespace-nowrap">
-                              <button @click="editTrx(t)" class="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block">Edit</button>
+                              <button @click="editTrx(t)" class="px-3 py-1 rounded-lg text-sm font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block">Edit</button>
                             </td>
                           </tr>
                         </template>
-                        <tr x-show="dayTrx(p, b).length === 0"><td colspan="8" class="td text-center text-slate-400 italic text-xs">Belum diambil siapa-siapa.</td></tr>
+                        <tr x-show="dayTrx(p, b).length === 0"><td colspan="8" class="td text-center text-slate-400 italic text-sm">Belum diambil siapa-siapa.</td></tr>
                       </tbody>
-                      <tfoot class="bg-slate-50 font-bold text-sm">
+                      <tfoot class="bg-slate-50 font-bold text-base">
                         <tr>
-                          <td colspan="2" class="td text-right text-xs uppercase text-slate-500">Total</td>
+                          <td colspan="2" class="td text-right text-sm uppercase text-slate-500">Total</td>
                           <td class="td" :class="qtyMismatch(p, b) ? 'text-red-600' : ''" x-text="num(sumQtyTerambil(p, b))"></td>
                           <td class="td"></td>
                           <td class="td" x-text="rp(sumTotalTrx(p, b))"></td>
@@ -886,7 +886,7 @@
                   </div>
                 </div>
               </template>
-              <p x-show="dayBarang(p).length === 0" class="text-center text-slate-400 text-sm italic py-2">Tambahkan barang masuk dulu untuk mencatat pengecer.</p>
+              <p x-show="dayBarang(p).length === 0" class="text-center text-slate-400 text-base italic py-2">Tambahkan barang masuk dulu untuk mencatat pengecer.</p>
             </div>
           </div>
         </template>
@@ -895,9 +895,9 @@
           <div class="px-6 py-4 bg-amber-800 text-white flex items-center justify-between">
             <div>
               <p class="font-bold">Diluar</p>
-              <p class="text-xs text-amber-100">Hutang di luar pengirim dan pengecer harian</p>
+              <p class="text-sm text-amber-100">Hutang di luar pengirim dan pengecer harian</p>
             </div>
-            <button @click="openDiluar()" class="btn bg-white/20 hover:bg-white/30 text-white !py-1.5 !text-xs">+ Tambah</button>
+            <button @click="openDiluar()" class="btn bg-white/20 hover:bg-white/30 text-white !py-1.5 !text-sm">+ Tambah</button>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full">
@@ -905,34 +905,34 @@
               <tbody>
                 <template x-for="(x, i) in dayDiluar()" :key="x.id">
                   <tr :id="'diluar-row-' + x.id" :class="rowClassD(x)">
-                    <td class="td text-center text-xs text-slate-500" x-text="i + 1"></td>
+                    <td class="td text-center text-sm text-slate-500" x-text="i + 1"></td>
                     <td class="td font-semibold whitespace-nowrap min-w-[5rem]" x-text="x.nama"></td>
-                    <td class="td text-slate-600"><template x-if="x.mode === 'nominal' || !(x.items && x.items.length)"><span x-text="rincian(x)"></span></template><template x-if="x.mode !== 'nominal' && x.items && x.items.length"><div class="space-y-0.5"><template x-for="(it, k) in x.items" :key="k"><div class="text-xs whitespace-nowrap" x-text="(it.nama ? it.nama + ' ' : '') + num(it.berat) + ' kg × ' + rp(it.harga)"></div></template></div></template></td>
+                    <td class="td text-slate-600"><template x-if="x.mode === 'nominal' || !(x.items && x.items.length)"><span x-text="rincian(x)"></span></template><template x-if="x.mode !== 'nominal' && x.items && x.items.length"><div class="space-y-0.5"><template x-for="(it, k) in x.items" :key="k"><div class="text-sm whitespace-nowrap" x-text="(it.nama ? it.nama + ' ' : '') + num(it.berat) + ' kg × ' + rp(it.harga)"></div></template></div></template></td>
                     <td class="td font-semibold whitespace-nowrap min-w-[6rem]" x-text="rp(totalD(x))"></td>
                     <td class="td">
                       <div class="flex items-center gap-2 whitespace-nowrap">
                         <div x-show="hasBayar(x) && Number(x.bayar) > 0">
-                          <span class="text-sm font-semibold block leading-tight" x-text="rp(x.bayar)"></span>
-                          <span x-show="x.tanggal && !isTU(x.status)" class="text-[10px] text-slate-500 block leading-tight mt-0.5" x-text="tgl(x.tanggal)"></span>
-                          <span x-show="isTU(x.status) && x.tanggal" class="text-[10px] text-slate-500 block leading-tight mt-0.5" x-text="'TU · sisa ' + rp(sisaD(x)) + ' · ' + tgl(x.tanggal)"></span>
-                          <span x-show="Number(x.potongan) > 0" class="text-[11px] font-medium text-emerald-700 block leading-tight mt-0.5" x-text="'Potongan ' + rp(x.potongan)"></span>
+                          <span class="text-base font-semibold block leading-tight" x-text="rp(x.bayar)"></span>
+                          <span x-show="x.tanggal && !isTU(x.status)" class="text-xs text-slate-500 block leading-tight mt-0.5" x-text="tgl(x.tanggal)"></span>
+                          <span x-show="isTU(x.status) && x.tanggal" class="text-xs text-slate-500 block leading-tight mt-0.5" x-text="'TU · sisa ' + rp(sisaD(x)) + ' · ' + tgl(x.tanggal)"></span>
+                          <span x-show="Number(x.potongan) > 0" class="text-xs font-medium text-emerald-700 block leading-tight mt-0.5" x-text="'Potongan ' + rp(x.potongan)"></span>
                         </div>
-                        <button @click="openBayarD(x)" class="btn btn-light !py-0.5 !px-2.5 !text-xs">+ Bayar</button>
+                        <button @click="openBayarD(x)" class="btn btn-light !py-0.5 !px-2.5 !text-sm">+ Bayar</button>
                       </div>
                     </td>
                     <td class="td">
-                      <span x-show="statusTransaksi(x) !== 'Belum'" class="badge inline-block whitespace-nowrap !px-2.5 !py-0.5 !text-[11px] leading-tight" :class="statusClass(statusTransaksi(x))" x-text="statusTransaksi(x).split(' ')[0]"></span>
-                      <span x-show="statusTransaksi(x) === 'Belum'" class="text-xs text-slate-400 italic whitespace-nowrap">Isi jumlah bayar</span>
+                      <span x-show="statusTransaksi(x) !== 'Belum'" class="badge inline-block whitespace-nowrap !px-2.5 !py-0.5 !text-xs leading-tight" :class="statusClass(statusTransaksi(x))" x-text="statusTransaksi(x).split(' ')[0]"></span>
+                      <span x-show="statusTransaksi(x) === 'Belum'" class="text-sm text-slate-400 italic whitespace-nowrap">Isi jumlah bayar</span>
                     </td>
                     <td class="td text-right whitespace-nowrap">
-                      <button @click="editDiluar(x)" class="px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block mr-2">Edit</button>
+                      <button @click="editDiluar(x)" class="px-3 py-1 rounded-lg text-sm font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 inline-block mr-2">Edit</button>
                     </td>
                   </tr>
                 </template>
-                <tr x-show="dayDiluar().length === 0"><td colspan="7" class="td text-center text-slate-400 italic text-xs">Belum ada data Diluar di hari ini.</td></tr>
+                <tr x-show="dayDiluar().length === 0"><td colspan="7" class="td text-center text-slate-400 italic text-sm">Belum ada data Diluar di hari ini.</td></tr>
               </tbody>
-              <tfoot class="bg-slate-50 font-bold text-sm">
-                <tr><td colspan="3" class="td text-right text-xs uppercase text-slate-500">Total</td><td class="td" x-text="rp(sumDiluar('total'))"></td><td class="td" x-text="rp(sumDiluar('bayar'))"></td><td colspan="2" class="td"></td></tr>
+              <tfoot class="bg-slate-50 font-bold text-base">
+                <tr><td colspan="3" class="td text-right text-sm uppercase text-slate-500">Total</td><td class="td" x-text="rp(sumDiluar('total'))"></td><td class="td" x-text="rp(sumDiluar('bayar'))"></td><td colspan="2" class="td"></td></tr>
               </tfoot>
             </table>
           </div>
@@ -1046,31 +1046,31 @@
         </div>
         <div class="flex w-full items-center gap-1.5 no-print">
           <div class="inline-flex shrink-0 rounded-xl border border-slate-200 bg-white p-0.5">
-            <button type="button" @click="bonMode = 'tanggal'" :class="bonMode === 'tanggal' ? 'bg-stone-900 text-white' : 'text-slate-600'" class="h-10 w-11 rounded-lg flex items-center justify-center" aria-label="Per tanggal" title="Per tanggal"><i class="ph-fill ph-calendar text-xl" aria-hidden="true"></i></button>
-            <button type="button" @click="bonMode = 'orang'" :class="bonMode === 'orang' ? 'bg-stone-900 text-white' : 'text-slate-600'" class="h-10 w-11 rounded-lg flex items-center justify-center" aria-label="Per orang" title="Per orang"><i class="ph-fill ph-users text-xl" aria-hidden="true"></i></button>
+            <button type="button" @click="bonMode = 'tanggal'" :class="bonMode === 'tanggal' ? 'bg-stone-900 text-white' : 'text-slate-600'" class="h-10 w-12 rounded-lg flex items-center justify-center" aria-label="Per tanggal" title="Per tanggal"><i class="ph-fill ph-calendar text-2xl" aria-hidden="true"></i></button>
+            <button type="button" @click="bonMode = 'orang'" :class="bonMode === 'orang' ? 'bg-stone-900 text-white' : 'text-slate-600'" class="h-10 w-12 rounded-lg flex items-center justify-center" aria-label="Per orang" title="Per orang"><i class="ph-fill ph-users text-2xl" aria-hidden="true"></i></button>
           </div>
-          <button type="button" @click="bonUrut = bonUrut === 'lama' ? 'baru' : 'lama'" class="btn btn-light !p-0 !w-11 !h-10 shrink-0 !rounded-xl" :aria-label="bonUrut === 'lama' ? 'Terlama dulu' : 'Terbaru dulu'" :title="bonUrut === 'lama' ? 'Terlama dulu' : 'Terbaru dulu'"><i :class="bonUrut === 'lama' ? 'ph-fill ph-sort-ascending' : 'ph-fill ph-sort-descending'" class="text-xl" aria-hidden="true"></i></button>
-          <button type="button" @click="bonMode === 'orang' ? bukaSemuaBonOrang(true) : bukaSemuaBon(true)" class="btn btn-light !p-0 !w-11 !h-10 shrink-0 !rounded-xl" aria-label="Buka semua" title="Buka semua"><i class="ph-fill ph-caret-double-down text-xl" aria-hidden="true"></i></button>
-          <button type="button" @click="bonMode === 'orang' ? bukaSemuaBonOrang(false) : bukaSemuaBon(false)" class="btn btn-light !p-0 !w-11 !h-10 shrink-0 !rounded-xl" aria-label="Tutup semua" title="Tutup semua"><i class="ph-fill ph-caret-double-up text-xl" aria-hidden="true"></i></button>
+          <button type="button" @click="bonUrut = bonUrut === 'lama' ? 'baru' : 'lama'" class="btn btn-light !p-0 !w-12 !h-10 shrink-0 !rounded-xl" :aria-label="bonUrut === 'lama' ? 'Terlama dulu' : 'Terbaru dulu'" :title="bonUrut === 'lama' ? 'Terlama dulu' : 'Terbaru dulu'"><i :class="bonUrut === 'lama' ? 'ph-fill ph-caret-double-down' : 'ph-fill ph-caret-double-up'" class="text-xl" aria-hidden="true"></i></button>
+          <button type="button" @click="bonSemuaTerbuka = !bonSemuaTerbuka; bonMode === 'orang' ? bukaSemuaBonOrang(bonSemuaTerbuka) : bukaSemuaBon(bonSemuaTerbuka)" class="btn btn-light !p-0 !w-12 !h-10 shrink-0 !rounded-xl" :aria-label="bonSemuaTerbuka ? 'Tutup semua' : 'Buka semua'" :title="bonSemuaTerbuka ? 'Tutup semua' : 'Buka semua'"><i :class="bonSemuaTerbuka ? 'ph-fill ph-arrows-in-simple' : 'ph-fill ph-arrows-out-simple'" class="text-xl" aria-hidden="true"></i></button>
+          <div class="relative flex-1 min-w-0"><input type="search" x-model="bonCari" @input="bukaCocokBon()" placeholder="Cari" enterkeyhint="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="inp !py-2 !px-3 text-sm w-full" aria-label="Cari nama"></div>
         </div>
 
         <!-- Tampilan per tanggal: tiap tanggal dengan daftar yang belum bayar -->
-        <div x-show="bonMode === 'tanggal'" x-cloak class="space-y-4">
-          <template x-for="g in tagihanPerTanggal()" :key="g.hari">
+        <div x-show="bonMode === 'tanggal'" x-cloak class="space-y-2">
+          <template x-for="g in tagihanPerTanggalView()" :key="g.hari">
             <div class="card overflow-hidden">
-              <button type="button" @click="bonBuka[g.hari] = !bonBuka[g.hari]" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left transition">
-                <div class="flex items-center gap-2 min-w-0">
+              <button type="button" @click="bonBuka[g.hari] = !bonBuka[g.hari]" class="w-full flex items-center justify-between gap-5 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left transition">
+                <div class="flex items-center gap-3 min-w-0">
                   <span class="text-slate-500 text-xs transition-transform duration-200 inline-block" :class="bonBuka[g.hari] ? 'rotate-90' : ''">▶</span>
                   <div class="min-w-0">
                     <p class="font-bold text-slate-900 text-sm" x-text="tgl(g.hari)"></p>
-                    <p class="text-xs text-slate-500" x-text="g.items.length + ' pihak belum bayar'"></p>
+                    <p class="text-xs text-slate-500 mt-2" x-text="g.items.length + ' pihak belum bayar'"></p>
                   </div>
                 </div>
                 <p class="font-extrabold text-rose-700 text-base shrink-0" x-text="rp(g.total)"></p>
               </button>
               <div x-show="bonBuka[g.hari]" x-cloak class="divide-y divide-slate-200 border-t border-slate-200">
                 <template x-for="it in g.items" :key="it.nama + it.kat">
-                  <div class="px-4 py-2.5 flex items-center justify-between gap-3">
+                  <div class="px-4 py-2 flex items-center justify-between gap-5">
                     <div class="min-w-0">
                       <div class="flex items-center gap-1.5 flex-wrap">
                         <span class="font-bold text-slate-900 text-sm" x-text="it.nama"></span>
@@ -1091,33 +1091,33 @@
               </div>
             </div>
           </template>
-          <div x-show="tagihanPerTanggal().length === 0" class="card p-6 text-center text-slate-400 italic text-sm">Tidak ada catatan belum bayar.</div>
+          <div x-show="tagihanPerTanggal().length === 0" class="card p-6 text-center text-slate-400 italic text-sm" x-text="pesanKosong(bonCari, 'Tidak ada catatan belum bayar.')"></div>
         </div>
 
         <!-- Tampilan per orang: sama dengan tab Pembayaran -->
-        <div x-show="bonMode === 'orang'" x-cloak class="space-y-4">
-          <template x-for="o in tagihanPerOrang()" :key="o.key">
+        <div x-show="bonMode === 'orang'" x-cloak class="space-y-2">
+          <template x-for="o in tagihanPerOrangView()" :key="o.key">
             <div class="card overflow-hidden">
-              <button type="button" @click="bonOrangBuka[o.key] = !bonOrangBuka[o.key]" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left transition">
-                <div class="flex items-center gap-2 min-w-0">
+              <button type="button" @click="bonOrangBuka[o.key] = !bonOrangBuka[o.key]" class="w-full flex items-center justify-between gap-5 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left transition">
+                <div class="flex items-center gap-3 min-w-0">
                   <span class="text-slate-500 text-xs transition-transform duration-200 inline-block" :class="bonOrangBuka[o.key] ? 'rotate-90' : ''">▶</span>
                   <div class="min-w-0">
                     <p class="font-bold text-slate-900 text-sm truncate" x-text="o.nama"></p>
-                    <p class="text-xs text-slate-500" x-text="o.items.length + ' tanggal belum bayar'"></p>
+                    <p class="text-xs text-slate-500 mt-2" x-text="o.items.length + ' tanggal belum bayar'"></p>
                   </div>
                 </div>
                 <p class="font-extrabold text-rose-700 text-base shrink-0" x-text="rp(o.total)"></p>
               </button>
               <div x-show="bonOrangBuka[o.key]" x-cloak class="border-t border-slate-200 divide-y divide-slate-100">
                 <template x-for="c in o.items" :key="c.hari + c.kat">
-                  <div class="px-4 py-2 flex items-start justify-between gap-3">
+                  <div class="px-4 py-2 flex items-start justify-between gap-5">
                     <div class="min-w-0">
-                      <div class="flex items-baseline gap-2 flex-wrap">
+                      <div class="flex items-baseline gap-3 flex-wrap">
                         <span class="text-sm font-bold text-slate-900 whitespace-nowrap" x-text="tgl(c.hari)"></span>
                         <span class="text-xs text-slate-500" x-text="(c.kat && c.kat !== 'Pengecer' ? c.kat : '') + (c.tu ? (c.kat && c.kat !== 'Pengecer' ? ' · ' : '') + 'TU' : '')"></span>
                       </div>
                       <template x-for="(r, k) in c.rinci" :key="k">
-                        <p class="text-xs text-slate-600 mt-0.5" x-text="r"></p>
+                        <p class="text-xs text-slate-600 mt-2" x-text="r"></p>
                       </template>
                     </div>
                     <span class="text-sm font-bold text-rose-700 whitespace-nowrap shrink-0" x-text="rp(c.jumlah)"></span>
@@ -1130,13 +1130,13 @@
               </div>
             </div>
           </template>
-          <div x-show="tagihanPerOrang().length === 0" class="card p-6 text-center text-slate-400 italic text-sm">Tidak ada catatan belum bayar.</div>
+          <div x-show="tagihanPerOrang().length === 0" class="card p-6 text-center text-slate-400 italic text-sm" x-text="pesanKosong(bonCari, 'Tidak ada catatan belum bayar.')"></div>
         </div>
 
         </div>
 
         <!-- Riwayat pembayaran bon dikelompokkan per bulan, lalu per tanggal -->
-        <div x-show="bonTab === 'pembayaran'" x-cloak class="space-y-4">
+        <div x-show="bonTab === 'pembayaran'" x-cloak class="space-y-2">
           <div class="card p-6 flex flex-wrap items-center justify-between gap-4">
             <div class="min-w-0">
               <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total pembayaran bon</p>
@@ -1150,38 +1150,38 @@
           </div>
           <div class="flex w-full items-center gap-1.5 no-print">
             <div class="inline-flex shrink-0 rounded-xl border border-slate-200 bg-white p-0.5">
-              <button type="button" @click="bonBayarMode = 'tanggal'" :class="bonBayarMode === 'tanggal' ? 'bg-stone-900 text-white' : 'text-slate-600'" class="h-10 w-11 rounded-lg flex items-center justify-center" aria-label="Per tanggal" title="Per tanggal"><i class="ph-fill ph-calendar text-xl" aria-hidden="true"></i></button>
-              <button type="button" @click="bonBayarMode = 'orang'" :class="bonBayarMode === 'orang' ? 'bg-stone-900 text-white' : 'text-slate-600'" class="h-10 w-11 rounded-lg flex items-center justify-center" aria-label="Per orang" title="Per orang"><i class="ph-fill ph-users text-xl" aria-hidden="true"></i></button>
+              <button type="button" @click="bonBayarMode = 'tanggal'" :class="bonBayarMode === 'tanggal' ? 'bg-stone-900 text-white' : 'text-slate-600'" class="h-10 w-12 rounded-lg flex items-center justify-center" aria-label="Per tanggal" title="Per tanggal"><i class="ph-fill ph-calendar text-2xl" aria-hidden="true"></i></button>
+              <button type="button" @click="bonBayarMode = 'orang'" :class="bonBayarMode === 'orang' ? 'bg-stone-900 text-white' : 'text-slate-600'" class="h-10 w-12 rounded-lg flex items-center justify-center" aria-label="Per orang" title="Per orang"><i class="ph-fill ph-users text-2xl" aria-hidden="true"></i></button>
             </div>
-            <button type="button" @click="bonBayarUrut = bonBayarUrut === 'lama' ? 'baru' : 'lama'" class="btn btn-light !p-0 !w-11 !h-10 shrink-0 !rounded-xl" :aria-label="bonBayarUrut === 'lama' ? 'Terlama dulu' : 'Terbaru dulu'" :title="bonBayarUrut === 'lama' ? 'Terlama dulu' : 'Terbaru dulu'"><i :class="bonBayarUrut === 'lama' ? 'ph-fill ph-sort-ascending' : 'ph-fill ph-sort-descending'" class="text-xl" aria-hidden="true"></i></button>
-            <button type="button" @click="bonBayarMode === 'orang' ? bukaSemuaPembayaranOrang(true) : bukaSemuaPembayaranBon(true)" class="btn btn-light !p-0 !w-11 !h-10 shrink-0 !rounded-xl" aria-label="Buka semua" title="Buka semua"><i class="ph-fill ph-caret-double-down text-xl" aria-hidden="true"></i></button>
-            <button type="button" @click="bonBayarMode === 'orang' ? bukaSemuaPembayaranOrang(false) : bukaSemuaPembayaranBon(false)" class="btn btn-light !p-0 !w-11 !h-10 shrink-0 !rounded-xl" aria-label="Tutup semua" title="Tutup semua"><i class="ph-fill ph-caret-double-up text-xl" aria-hidden="true"></i></button>
+            <button type="button" @click="bonBayarUrut = bonBayarUrut === 'lama' ? 'baru' : 'lama'" class="btn btn-light !p-0 !w-12 !h-10 shrink-0 !rounded-xl" :aria-label="bonBayarUrut === 'lama' ? 'Terlama dulu' : 'Terbaru dulu'" :title="bonBayarUrut === 'lama' ? 'Terlama dulu' : 'Terbaru dulu'"><i :class="bonBayarUrut === 'lama' ? 'ph-fill ph-caret-double-down' : 'ph-fill ph-caret-double-up'" class="text-xl" aria-hidden="true"></i></button>
+            <button type="button" @click="bonBayarSemuaTerbuka = !bonBayarSemuaTerbuka; bonBayarMode === 'orang' ? bukaSemuaPembayaranOrang(bonBayarSemuaTerbuka) : bukaSemuaPembayaranBon(bonBayarSemuaTerbuka)" class="btn btn-light !p-0 !w-12 !h-10 shrink-0 !rounded-xl" :aria-label="bonBayarSemuaTerbuka ? 'Tutup semua' : 'Buka semua'" :title="bonBayarSemuaTerbuka ? 'Tutup semua' : 'Buka semua'"><i :class="bonBayarSemuaTerbuka ? 'ph-fill ph-arrows-in-simple' : 'ph-fill ph-arrows-out-simple'" class="text-xl" aria-hidden="true"></i></button>
+            <div class="relative flex-1 min-w-0"><input type="search" x-model="bonBayarCari" @input="bukaCocokBayar()" placeholder="Cari" enterkeyhint="search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="inp !py-2 !px-3 text-sm w-full" aria-label="Cari nama"></div>
           </div>
 
           <!-- Tampilan per tanggal -->
-          <div x-show="bonBayarMode === 'tanggal'" x-cloak class="space-y-4">
-          <template x-for="g in pembayaranBonPerTanggal()" :key="g.tanggal">
+          <div x-show="bonBayarMode === 'tanggal'" x-cloak class="space-y-2">
+          <template x-for="g in pembayaranBonPerTanggalView()" :key="g.tanggal">
             <div class="card overflow-hidden">
-              <button type="button" @click="bonBayarBuka[g.tanggal] = !bonBayarBuka[g.tanggal]" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left transition">
-                <div class="flex items-center gap-2 min-w-0">
+              <button type="button" @click="bonBayarBuka[g.tanggal] = !bonBayarBuka[g.tanggal]" class="w-full flex items-center justify-between gap-5 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left transition">
+                <div class="flex items-center gap-3 min-w-0">
                   <span class="text-slate-500 text-xs transition-transform duration-200 inline-block" :class="bonBayarBuka[g.tanggal] ? 'rotate-90' : ''">▶</span>
                   <div class="min-w-0">
                     <p class="font-bold text-slate-900 text-sm" x-text="tgl(g.tanggal)"></p>
-                    <p class="text-xs text-slate-500" x-text="g.items.length + ' pembayaran' "></p>
+                    <p class="text-xs text-slate-500 mt-2" x-text="g.items.length + ' pembayaran' "></p>
                   </div>
                 </div>
                 <p class="font-extrabold text-emerald-700 text-base shrink-0" x-text="rp(g.total)"></p>
               </button>
               <div x-show="bonBayarBuka[g.tanggal]" x-cloak class="divide-y divide-slate-200 border-t border-slate-200">
                 <template x-for="c in g.items" :key="c.id">
-                  <div class="px-4 py-2 flex items-start justify-between gap-3">
+                  <div class="px-4 py-2 flex items-start justify-between gap-5">
                     <div class="min-w-0">
                       <p class="font-bold text-slate-900 text-sm truncate" x-text="c.nama"></p>
-                      <p class="text-xs text-slate-600 mt-0.5" x-text="c.tanggalTransaksi ? 'Transaksi: ' + c.tanggalTransaksi : (c.jenis === 'TU' ? 'Saldo TU, belum dipakai untuk tagihan' : 'Belum terhubung ke transaksi')"></p>
+                      <p class="text-xs text-slate-600 mt-2" x-text="c.tanggalTransaksi ? 'Transaksi: ' + c.tanggalTransaksi : (c.jenis === 'TU' ? 'Saldo TU, belum dipakai untuk tagihan' : 'Belum terhubung ke transaksi')"></p>
                     </div>
                     <div class="text-right shrink-0">
                       <p class="text-sm font-bold text-emerald-700 whitespace-nowrap" x-text="rp(c.jumlah)"></p>
-                      <p class="text-xs text-slate-500 mt-0.5" x-text="(c.metode || 'Cash') + ' · ' + (c.jenis || 'TU')"></p>
+                      <p class="text-xs text-slate-500 mt-2" x-text="(c.metode || 'Cash') + ' · ' + (c.jenis || 'TU')"></p>
                       <div class="flex justify-end gap-3 mt-1 no-print">
                         <button type="button" @click="bonEditPembayaran(c)" class="text-indigo-700 text-xs font-semibold">Edit</button>
                         <button type="button" @click="bonHapusPembayaran(c)" class="text-rose-600 text-xs font-semibold">Hapus</button>
@@ -1196,35 +1196,35 @@
               </div>
             </div>
           </template>
-          <div x-show="pembayaranBonPerTanggal().length === 0" class="card p-8 text-center text-slate-400 text-sm">Tidak ada pembayaran pada bulan ini.</div>
+          <div x-show="pembayaranBonPerTanggal().length === 0" class="card p-8 text-center text-slate-400 text-sm" x-text="pesanKosong(bonBayarCari, 'Tidak ada pembayaran pada bulan ini.')"></div>
           </div>
 
           <!-- Tampilan per orang: tiap orang bisa dibuka untuk melihat pembayaran dan transaksinya -->
-          <div x-show="bonBayarMode === 'orang'" x-cloak class="space-y-4">
-            <template x-for="o in pembayaranBonPerOrang()" :key="o.key">
+          <div x-show="bonBayarMode === 'orang'" x-cloak class="space-y-2">
+            <template x-for="o in pembayaranBonPerOrangView()" :key="o.key">
               <div class="card overflow-hidden">
-                <button type="button" @click="bonBayarOrangBuka[o.key] = !bonBayarOrangBuka[o.key]" class="w-full flex items-center justify-between gap-3 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left transition">
-                  <div class="flex items-center gap-2 min-w-0">
+                <button type="button" @click="bonBayarOrangBuka[o.key] = !bonBayarOrangBuka[o.key]" class="w-full flex items-center justify-between gap-5 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left transition">
+                  <div class="flex items-center gap-3 min-w-0">
                     <span class="text-slate-500 text-xs transition-transform duration-200 inline-block" :class="bonBayarOrangBuka[o.key] ? 'rotate-90' : ''">▶</span>
                     <div class="min-w-0">
                       <p class="font-bold text-slate-900 text-sm truncate" x-text="o.nama"></p>
-                      <p class="text-xs text-slate-500" x-text="o.items.length + ' pembayaran'"></p>
+                      <p class="text-xs text-slate-500 mt-2" x-text="o.items.length + ' pembayaran'"></p>
                     </div>
                   </div>
                   <p class="font-extrabold text-emerald-700 text-base shrink-0" x-text="rp(o.total)"></p>
                 </button>
                 <div x-show="bonBayarOrangBuka[o.key]" x-cloak class="border-t border-slate-200 divide-y divide-slate-100">
                   <template x-for="c in o.items" :key="c.id">
-                    <div class="px-4 py-2 flex items-start justify-between gap-3">
+                    <div class="px-4 py-2 flex items-start justify-between gap-5">
                       <div class="min-w-0">
-                        <div class="flex items-baseline gap-2 flex-wrap">
+                        <div class="flex items-baseline gap-3 flex-wrap">
                           <span class="text-sm font-bold text-slate-900 whitespace-nowrap" x-text="tgl(c.tgl)"></span>
                           <span class="text-xs text-slate-500" x-text="(c.metode || 'Cash') + ' · ' + (c.jenis || 'TU')"></span>
                         </div>
                         <template x-for="(r, k) in (c.transaksiDetail || [])" :key="k">
-                          <p class="text-xs text-slate-600 mt-0.5" x-text="r"></p>
+                          <p class="text-xs text-slate-600 mt-2" x-text="r"></p>
                         </template>
-                        <p x-show="!c.transaksiDetail || !c.transaksiDetail.length" class="text-xs text-slate-500 mt-0.5" x-text="c.jenis === 'TU' ? 'Saldo TU' : 'Belum terhubung'"></p>
+                        <p x-show="!c.transaksiDetail || !c.transaksiDetail.length" class="text-xs text-slate-500 mt-1" x-text="c.jenis === 'TU' ? 'Saldo TU' : 'Belum terhubung'"></p>
                         <div class="flex gap-3 mt-1 no-print">
                           <button type="button" @click="bonEditPembayaran(c)" class="text-indigo-700 text-xs font-semibold">Edit</button>
                           <button type="button" @click="bonHapusPembayaran(c)" class="text-rose-600 text-xs font-semibold">Hapus</button>
@@ -1236,7 +1236,7 @@
                 </div>
               </div>
             </template>
-            <div x-show="pembayaranBonPerOrang().length === 0" class="card p-8 text-center text-slate-400 text-sm">Tidak ada pembayaran pada bulan ini.</div>
+            <div x-show="pembayaranBonPerOrang().length === 0" class="card p-8 text-center text-slate-400 text-sm" x-text="pesanKosong(bonBayarCari, 'Tidak ada pembayaran pada bulan ini.')"></div>
           </div>
         </div>
       </section>
@@ -2125,12 +2125,16 @@ function app() {
     bonTab: 'belum',
     bonBayarBuka: {},
     bonBayarMode: 'orang',
+    bonBayarCari: '',
+    bonBayarSemuaTerbuka: false,
     bonBayarOrangBuka: {},
     bonBayarUrut: 'baru',
     bonBayarBulan: '',
     bonUrut: 'lama',
     bonBuka: {},
     bonOrangBuka: {},
+    bonCari: '',
+    bonSemuaTerbuka: false,
     riwayat: [],
     backupDue: false,
     anakBuah: [], makanDays: [], absenMakan: [], bayarMakan: [],
@@ -3729,6 +3733,20 @@ function app() {
       this.pembayaranBonPerTanggal().forEach(g => { status[g.tanggal] = !!buka; });
       this.bonBayarBuka = status;
     },
+    pesanKosong(q, biasa) {
+      const k = (q || '').trim();
+      return k ? 'Tidak ada nama yang cocok dengan “' + k + '”' : biasa;
+    },
+    bukaCocokBon() {
+      if (!this.bonCari || !this.bonCari.trim()) return;
+      this.tagihanPerOrangView().forEach(o => { this.bonOrangBuka[o.key] = true; });
+      this.tagihanPerTanggalView().forEach(g => { this.bonBuka[g.hari] = true; });
+    },
+    bukaCocokBayar() {
+      if (!this.bonBayarCari || !this.bonBayarCari.trim()) return;
+      this.pembayaranBonPerOrangView().forEach(o => { this.bonBayarOrangBuka[o.key] = true; });
+      this.pembayaranBonPerTanggalView().forEach(g => { this.bonBayarBuka[g.tanggal] = true; });
+    },
     pembayaranBonPerOrang() {
       const map = {};
       const bulan = this.pembayaranBonBulanAktif();
@@ -3783,6 +3801,26 @@ function app() {
         m.keterangan = bagian.join(' & ');
         return m;
       }).sort((a, b) => b.jumlah - a.jumlah);
+    },
+    cocokCari(nama, q) {
+      const k = (q || '').trim().toLowerCase();
+      return !k || String(nama || '').toLowerCase().includes(k);
+    },
+    tagihanPerTanggalView() {
+      return this.tagihanPerTanggal()
+        .map(g => { const items = g.items.filter(it => this.cocokCari(it.nama, this.bonCari)); return { ...g, items, total: items.reduce((t, i) => t + i.jumlah, 0) }; })
+        .filter(g => g.items.length);
+    },
+    tagihanPerOrangView() {
+      return this.tagihanPerOrang().filter(o => this.cocokCari(o.nama, this.bonCari));
+    },
+    pembayaranBonPerTanggalView() {
+      return this.pembayaranBonPerTanggal()
+        .map(g => { const items = g.items.filter(c => this.cocokCari(c.nama, this.bonBayarCari)); return { ...g, items, total: items.reduce((t, c) => t + (Number(c.jumlah) || 0), 0) }; })
+        .filter(g => g.items.length);
+    },
+    pembayaranBonPerOrangView() {
+      return this.pembayaranBonPerOrang().filter(o => this.cocokCari(o.nama, this.bonBayarCari));
     },
     tagihanPerOrang() {
       const urut = this.bonUrut === 'baru' ? -1 : 1;
