@@ -3154,7 +3154,7 @@ function app() {
         if (aktif && pool.every(t => t.lunas)) {
           const sisa = aktif.trxIds.filter(id => !list.find(t => String(t.id) === String(id)).lunas);
           if (sisa.length) {
-            const baru = { no: siklus.length + 1, trxIds: sisa, hasTU: !!aktif.hasTU, tuMetode: aktif.tuMetode || 'Cash' };
+            const baru = { no: siklus.length + 1, trxIds: sisa, hasTU: false, tuMetode: 'Cash' };
             siklus.push(baru);
             sisa.forEach(id => { const tr = list.find(t => String(t.id) === String(id)); tr.siklusNo = baru.no; tr.baruSiklus = true; });
             aktif.trxIds = aktif.trxIds.filter(id => !sisa.includes(id));
