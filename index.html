@@ -3965,15 +3965,18 @@ function app() {
       const out = [];
       const n = this.nota.rows.filter(r => !r.keluar).length;
       if (n > 1) out.push({ l: 'JUMLAH', v: this.rp(this.notaTotal()), tebal: true });
+      // Cetak hanya pembayaran yang nominalnya benar-benar lebih dari nol.
+      // Riwayat bernilai 0 tidak boleh membuat baris TU/TF atau baris SISA.
+      const cicilanValid = this.notaCicilan().filter(c => (Number(c.jumlah) || 0) > 0);
       const grup = {};
-      this.notaCicilan().forEach(c => {
-        const jenis = c.metode === 'Tf' ? 'TF' : 'TU';
+      cicilanValid.forEach(c => {
+        const jenis = String(c.metode || '').toLowerCase() === 'tf' ? 'TF' : 'TU';
         const k = jenis + '|' + c.tgl;
         if (!grup[k]) grup[k] = { l: jenis + '-' + this.tglBon(c.tgl), jumlah: 0 };
         grup[k].jumlah += Number(c.jumlah) || 0;
       });
-      Object.values(grup).forEach(g => out.push({ l: g.l, v: '- ' + this.rp(g.jumlah), red: true, kecil: true }));
-      if (this.notaCicilan().length > 0) out.push({ l: 'SISA', v: this.rp(this.notaSisa()), tebal: true });
+      Object.values(grup).filter(g => g.jumlah > 0).forEach(g => out.push({ l: g.l, v: '- ' + this.rp(g.jumlah), red: true, kecil: true }));
+      if (cicilanValid.length > 0) out.push({ l: 'SISA', v: this.rp(this.notaSisa()), tebal: true });
       const total = this.bpRows().length + out.length;
       for (let k = total; k < 13; k++) out.push({ l: '', v: '' });
       return out;
