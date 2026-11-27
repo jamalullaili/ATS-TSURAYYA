@@ -3019,14 +3019,25 @@ function app() {
       this.regenerateSetoran();
     },
     alokasiNama(n) {
-      this.alokasiInti(this.trxNama(n).sort((a, b) => (a.hari || '').localeCompare(b.hari || '') || (a.id - b.id)),
-        this.pembayaranNama(n, 'P').slice().sort((a, b) => (a.tgl || '').localeCompare(b.tgl || '') || (a.id - b.id)),
-        t => Number(t.total) || 0);
+      // Pengecer dan Diluar dengan nama yang sama adalah satu orang dan satu
+      // siklus pembayaran. Hitung keduanya dalam satu urutan agar penutupan TU
+      // pada salah satu sisi juga memperbarui status sisi lainnya.
+      const trxP = this.trxNama(n);
+      const trxD = this.trxNamaD(n);
+      const setP = new Set(trxP);
+      const gabungan = [...trxP, ...trxD].sort((a, b) =>
+        (a.hari || '').localeCompare(b.hari || '') || (Number(a.id) - Number(b.id)));
+      const semuaBayar = [
+        ...this.pembayaranNama(n, 'P'),
+        ...this.pembayaranNama(n, 'D')
+      ].sort((a, b) => (a.tgl || '').localeCompare(b.tgl || '') || (Number(a.id) - Number(b.id)));
+      this.alokasiInti(gabungan, semuaBayar, t => setP.has(t)
+        ? (Number(t.total) || 0)
+        : this.totalD(t));
     },
     alokasiNamaD(n) {
-      this.alokasiInti(this.trxNamaD(n).sort((a, b) => (a.hari || '').localeCompare(b.hari || '') || (a.id - b.id)),
-        this.pembayaranNama(n, 'D').slice().sort((a, b) => (a.tgl || '').localeCompare(b.tgl || '') || (a.id - b.id)),
-        t => this.totalD(t));
+      // Gunakan perhitungan gabungan yang sama, bukan siklus Diluar terpisah.
+      this.alokasiNama(n);
     },
     alokasiInti(list, pays, totalOf) {
       // Model: TU = saldo orang ini (per tanggal). Tidak menutup tagihan saat dicatat.
@@ -3147,6 +3158,15 @@ function app() {
             if (!c.siklusNos.includes(aktif.no)) c.siklusNos.push(aktif.no);
           }
         });
+        // Jika transaksi yang dipilih sudah benar-benar Lunas, hentikan penanda TU
+        // untuk siklus asalnya. Transaksi lain yang tidak ikut dilunasi dan tidak
+        // memiliki alokasi TU akan kembali berstatus Belum; transaksi yang memang
+        // masih memiliki alokasi TU tetap dikenali melalui t.alloc > 0.
+        if (pool.length && pool.every(t => t.lunas)) {
+          const siklusTerdampak = new Set(pool.map(t => t.siklusNo).filter(no => no != null));
+          siklus.forEach(sc => { if (siklusTerdampak.has(sc.no)) sc.hasTU = false; });
+        }
+
         // Sisa uang Lunas tidak menjadi saldo TU: nominal Lunas harus sama dengan sisa yang dicentang
 
         // Siklus selesai bila semua yang dicentang sudah lunas: tagihan lain yang
